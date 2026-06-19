@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home Maintenance — Adulting</title>
+  <link rel="stylesheet" href="style.css?v=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- ===== AUTH SCREEN ===== -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="auth-logo"><i class="fa-solid fa-house-chimney"></i></div>
+        <h1>Adulting</h1>
+        <p>Home maintenance tracker</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('signin')">Sign in</button>
+        <button class="auth-tab" onclick="switchAuthTab('signup')">Create account</button>
+      </div>
+
+
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+        <div id="name-field" class="form-group" style="display:none">
+          <label>Full name</label>
+          <input type="text" id="auth-name" placeholder="Pat Jackson" autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <div id="auth-error" class="auth-error" style="display:none"></div>
+        <button type="submit" class="primary-btn" id="auth-submit-btn">Sign in</button>
+      </form>
+
+      <p class="auth-footer">
+        <span id="auth-switch-link" onclick="switchAuthTab('signup')">Create an account</span>
+        &nbsp;·&nbsp;
+        <span onclick="handleForgotPassword()">Forgot password?</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== MAIN APP ===== -->
+  <div id="app" style="display:none">
+
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="topbar-brand">
+          <i class="fa-solid fa-house-chimney"></i>
+          <span>Adulting</span>
+        </div>
+        <div class="topbar-right">
+          <button class="icon-btn" onclick="toggleUserMenu()" title="Account">
+            <i class="fa-solid fa-circle-user"></i>
+          </button>
+          <div class="user-menu" id="user-menu" style="display:none">
+            <div class="user-menu-name" id="user-menu-name"></div>
+            <div class="user-menu-email" id="user-menu-email"></div>
+            <hr>
+            <button onclick="signOut()"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-content">
+
+      <!-- DASHBOARD -->
+      <div id="page-dashboard" class="page active">
+        <div class="page-header"><h1>Dashboard</h1></div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-num red" id="stat-overdue">—</div><div class="stat-label">Overdue</div></div>
+          <div class="stat-card"><div class="stat-num amber" id="stat-soon">—</div><div class="stat-label">Due soon</div></div>
+          <div class="stat-card"><div class="stat-num green" id="stat-assets">—</div><div class="stat-label">Assets tracked</div></div>
+        </div>
+        <div id="dash-overdue-wrap" style="display:none">
+          <h2 class="section-label">Overdue</h2>
+          <div id="dash-overdue" class="task-list"></div>
+        </div>
+        <h2 class="section-label">Coming up (next 60 days)</h2>
+        <div id="dash-upcoming" class="task-list">
+          <div class="empty-state"><i class="fa-solid fa-circle-check"></i><p>All caught up!</p></div>
+        </div>
+      </div>
+
+      <!-- ASSETS -->
+      <div id="page-assets" class="page">
+        <div class="page-header">
+          <h1>My assets</h1>
+          <button class="primary-btn small" onclick="showAddAsset()"><i class="fa-solid fa-plus"></i> Add</button>
+        </div>
+        <div id="asset-list"><div class="empty-state"><i class="fa-solid fa-wrench"></i><p>No assets yet. Add your first one!</p></div></div>
+      </div>
+
+      <!-- LOG -->
+      <div id="page-log" class="page">
+        <div class="page-header">
+          <h1>Maintenance log</h1>
+          <button class="primary-btn small" onclick="showLogEntry()"><i class="fa-solid fa-plus"></i> Log work</button>
+        </div>
+        <div id="log-list"><div class="empty-state"><i class="fa-solid fa-clipboard-list"></i><p>No entries yet.</p></div></div>
+      </div>
+
+      <!-- SAVINGS -->
+      <div id="page-savings" class="page">
+        <div class="page-header"><h1>Savings report</h1></div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-num green" id="savings-spent">$0</div><div class="stat-label">Spent on maintenance</div></div>
+          <div class="stat-card"><div class="stat-num green" id="savings-avoided">$0</div><div class="stat-label">Est. repairs avoided</div></div>
+          <div class="stat-card"><div class="stat-num green" id="savings-return">—</div><div class="stat-label">Return</div></div>
+        </div>
+        <h2 class="section-label">Recent entries</h2>
+        <div id="savings-log"><div class="empty-state"><i class="fa-solid fa-chart-bar"></i><p>Log maintenance to see your savings.</p></div></div>
+      </div>
+
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" onclick="showPage('dashboard', this)"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></button>
+      <button class="nav-item" onclick="showPage('assets', this)"><i class="fa-solid fa-wrench"></i><span>Assets</span></button>
+      <button class="nav-item" onclick="showPage('log', this)"><i class="fa-solid fa-clipboard-list"></i><span>Log</span></button>
+      <button class="nav-item" onclick="showPage('savings', this)"><i class="fa-solid fa-chart-bar"></i><span>Savings</span></button>
+    </nav>
+  </div>
+
+  <!-- ADD ASSET DRAWER -->
+  <div id="asset-drawer" class="drawer" style="display:none">
+    <div class="drawer-inner">
+      <div class="drawer-header">
+        <h2>Add asset</h2>
+        <button class="icon-btn" onclick="closeDrawer('asset-drawer')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <div class="chip-row" id="category-chips">
+          <button type="button" class="chip active" data-cat="hvac" onclick="selectCategory(this)"><i class="fa-solid fa-wind"></i> HVAC</button>
+          <button type="button" class="chip" data-cat="water" onclick="selectCategory(this)"><i class="fa-solid fa-droplet"></i> Water</button>
+          <button type="button" class="chip" data-cat="appliance" onclick="selectCategory(this)"><i class="fa-solid fa-plug"></i> Appliance</button>
+          <button type="button" class="chip" data-cat="electrical" onclick="selectCategory(this)"><i class="fa-solid fa-bolt"></i> Electrical</button>
+          <button type="button" class="chip" data-cat="plumbing" onclick="selectCategory(this)"><i class="fa-solid fa-faucet"></i> Plumbing</button>
+          <button type="button" class="chip" data-cat="roof" onclick="selectCategory(this)"><i class="fa-solid fa-house"></i> Roof</button>
+          <button type="button" class="chip" data-cat="other" onclick="selectCategory(this)"><i class="fa-solid fa-box"></i> Other</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Asset name</label>
+        <input type="text" id="asset-name" placeholder="e.g. Carrier Furnace">
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Brand</label><input type="text" id="asset-brand" placeholder="Carrier"></div>
+        <div class="form-group"><label>Model</label><input type="text" id="asset-model" placeholder="58CVA080"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Install year</label>
+          <input type="number" id="asset-install-year" placeholder="2018" min="1950" max="2030">
+        </div>
+        <div class="form-group">
+          <label>Install month <span class="optional">(if known)</span></label>
+          <select id="asset-install-month">
+            <option value="">Not sure</option>
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes <span class="optional">(serial #, contractor, etc.)</span></label>
+        <textarea id="asset-notes" rows="2" placeholder="Optional"></textarea>
+      </div>
+      <div class="drawer-section-label">Suggested maintenance tasks</div>
+      <p class="drawer-hint">Select the ones that apply. You can add more later.</p>
+      <div id="suggested-tasks" class="task-checklist"></div>
+      <div id="asset-save-error" class="auth-error" style="display:none"></div>
+      <button class="primary-btn" onclick="saveAsset()">Save asset</button>
+    </div>
+  </div>
+
+  <!-- LOG ENTRY DRAWER -->
+  <div id="log-drawer" class="drawer" style="display:none">
+    <div class="drawer-inner">
+      <div class="drawer-header">
+        <h2>Log maintenance</h2>
+        <button class="icon-btn" onclick="closeDrawer('log-drawer')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="form-group">
+        <label>Asset</label>
+        <select id="log-asset" onchange="loadLogTasks()"></select>
+      </div>
+      <div class="form-group">
+        <label>Task</label>
+        <select id="log-task"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Date completed</label><input type="date" id="log-date"></div>
+        <div class="form-group"><label>Cost ($)</label><input type="number" id="log-cost" placeholder="0" min="0" step="0.01"></div>
+      </div>
+      <div class="form-group">
+        <label>Done by</label>
+        <input type="text" id="log-done-by" placeholder="DIY or contractor name">
+      </div>
+      <div class="form-group">
+        <label>Notes <span class="optional">(optional)</span></label>
+        <textarea id="log-notes" rows="2"></textarea>
+      </div>
+      <div id="log-save-error" class="auth-error" style="display:none"></div>
+      <button class="primary-btn" onclick="saveLogEntry()">Save entry</button>
+    </div>
+  </div>
+
+  <div id="drawer-overlay" class="drawer-overlay" style="display:none" onclick="closeAllDrawers()"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js?v=1"></script>
+</body>
+</html>
