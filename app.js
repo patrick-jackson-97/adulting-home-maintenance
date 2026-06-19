@@ -3,10 +3,10 @@
 // app.js v1
 // ==============================================
 
-const SUPABASE_URL  = 'https://vzgozesfrdluibzvqdcp.supabase.co';
+const SUPABASE_URL  = 'https://vzgozesfrdluibzvqdcp.sb.co';
 const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6Z296ZXNmcmRsdWlienZxZGNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTYwNjYsImV4cCI6MjA5NzQ3MjA2Nn0.Wv3mRrRCXImCFQNWnfysGazwWrq_KfUfxq4_uL8xA68';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.sb.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==============================================
 // STATE
@@ -28,13 +28,13 @@ const REPAIR_VALUE = {
 // INIT
 // ==============================================
 document.addEventListener('DOMContentLoaded', async () => {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await sb.auth.getSession();
   if (session) {
     currentUser = session.user;
     showApp();
   }
 
-  supabase.auth.onAuthStateChange((_event, session) => {
+  sb.auth.onAuthStateChange((_event, session) => {
     if (session) {
       currentUser = session.user;
       showApp();
@@ -75,7 +75,7 @@ async function handleAuthSubmit(e) {
   let error;
   if (authMode === 'signup') {
     const name = document.getElementById('auth-name').value.trim();
-    const { error: e } = await supabase.auth.signUp({
+    const { error: e } = await sb.auth.signUp({
       email, password,
       options: { data: { full_name: name } }
     });
@@ -87,7 +87,7 @@ async function handleAuthSubmit(e) {
       errEl.textContent = 'Account created! Check your email to confirm, then sign in.';
     }
   } else {
-    const { error: e } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: e } = await sb.auth.signInWithPassword({ email, password });
     error = e;
   }
 
@@ -103,7 +103,7 @@ async function handleAuthSubmit(e) {
 }
 
 async function signInWithGoogle() {
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.origin }
   });
@@ -113,7 +113,7 @@ async function signInWithGoogle() {
 async function handleForgotPassword() {
   const email = document.getElementById('auth-email').value.trim();
   if (!email) { alert('Enter your email address first.'); return; }
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin
   });
   if (error) alert(error.message);
@@ -121,7 +121,7 @@ async function handleForgotPassword() {
 }
 
 async function signOut() {
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   toggleUserMenu(true);
 }
 
@@ -151,7 +151,7 @@ async function showApp() {
 // DATA LOADING
 // ==============================================
 async function loadDefaultTasks() {
-  const { data } = await supabase.from('default_tasks').select('*');
+  const { data } = await sb.from('default_tasks').select('*');
   defaultTasks = data || [];
 }
 
@@ -359,7 +359,7 @@ async function saveAsset() {
   const installYear  = parseInt(document.getElementById('asset-install-year').value) || null;
   const installMonth = parseInt(document.getElementById('asset-install-month').value) || null;
 
-  const { data: asset, error } = await supabase.from('assets').insert({
+  const { data: asset, error } = await sb.from('assets').insert({
     user_id:       currentUser.id,
     category:      selectedCat,
     name,
@@ -385,7 +385,7 @@ async function saveAsset() {
         next_due_at:  nextDue
       };
     });
-    await supabase.from('maintenance_tasks').insert(taskRows);
+    await sb.from('maintenance_tasks').insert(taskRows);
   }
 
   closeDrawer('asset-drawer');
@@ -417,7 +417,7 @@ async function completeTask(taskId) {
   const nextDue = new Date(now.getTime() + task.interval_days * 86400000);
 
   // Log the completion
-  await supabase.from('maintenance_log').insert({
+  await sb.from('maintenance_log').insert({
     task_id:      taskId,
     asset_id:     task.asset_id,
     user_id:      currentUser.id,
@@ -426,7 +426,7 @@ async function completeTask(taskId) {
   });
 
   // Update task's next due date
-  await supabase.from('maintenance_tasks').update({
+  await sb.from('maintenance_tasks').update({
     last_completed_at: now.toISOString(),
     next_due_at:       nextDue.toISOString()
   }).eq('id', taskId);
@@ -469,7 +469,7 @@ async function saveLogEntry() {
   const date   = document.getElementById('log-date').value;
   const cost   = parseFloat(document.getElementById('log-cost').value) || 0;
 
-  const { error } = await supabase.from('maintenance_log').insert({
+  const { error } = await sb.from('maintenance_log').insert({
     task_id:      taskId,
     asset_id:     assetId,
     user_id:      currentUser.id,
@@ -485,7 +485,7 @@ async function saveLogEntry() {
   if (taskId) {
     const task    = allTasks.find(t => t.id === taskId);
     const nextDue = new Date(new Date(date).getTime() + task.interval_days * 86400000);
-    await supabase.from('maintenance_tasks').update({
+    await sb.from('maintenance_tasks').update({
       last_completed_at: new Date(date).toISOString(),
       next_due_at:       nextDue.toISOString()
     }).eq('id', taskId);
