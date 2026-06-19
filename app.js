@@ -1,6 +1,6 @@
 // ==============================================
 // ADULTING — HOME MAINTENANCE TRACKER
-// app.js v1
+// app.js v2
 // ==============================================
 
 const SUPABASE_URL  = 'https://vzgozesfrdluibzvqdcp.supabase.co';
