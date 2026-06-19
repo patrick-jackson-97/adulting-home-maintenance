@@ -3,10 +3,10 @@
 // app.js v1
 // ==============================================
 
-const SUPABASE_URL  = 'https://vzgozesfrdluibzvqdcp.sb.co';
+const SUPABASE_URL  = 'https://vzgozesfrdluibzvqdcp.supabase.co';
 const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6Z296ZXNmcmRsdWlienZxZGNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTYwNjYsImV4cCI6MjA5NzQ3MjA2Nn0.Wv3mRrRCXImCFQNWnfysGazwWrq_KfUfxq4_uL8xA68';
 
-const sb = window.sb.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==============================================
 // STATE
