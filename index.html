@@ -142,11 +142,11 @@
     </nav>
   </div>
 
-  <!-- ADD ASSET DRAWER -->
+  <!-- ADD / EDIT ASSET DRAWER -->
   <div id="asset-drawer" class="drawer" style="display:none">
     <div class="drawer-inner">
       <div class="drawer-header">
-        <h2>Add asset</h2>
+        <h2 id="asset-drawer-title">Add asset</h2>
         <button class="icon-btn" onclick="closeDrawer('asset-drawer')"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="form-group">
@@ -191,11 +191,13 @@
         <label>Notes <span class="optional">(serial #, contractor, etc.)</span></label>
         <textarea id="asset-notes" rows="2" placeholder="Optional"></textarea>
       </div>
-      <div class="drawer-section-label">Suggested maintenance tasks</div>
-      <p class="drawer-hint">Select the ones that apply. You can add more later.</p>
-      <div id="suggested-tasks" class="task-checklist"></div>
+      <div id="suggested-tasks-section">
+        <div class="drawer-section-label">Suggested maintenance tasks</div>
+        <p class="drawer-hint">Select the ones that apply. You can add more later.</p>
+        <div id="suggested-tasks" class="task-checklist"></div>
+      </div>
       <div id="asset-save-error" class="auth-error" style="display:none"></div>
-      <button class="primary-btn" onclick="saveAsset()">Save asset</button>
+      <button class="primary-btn" id="asset-save-btn" onclick="saveAsset()">Save asset</button>
     </div>
   </div>
 
@@ -203,7 +205,7 @@
   <div id="log-drawer" class="drawer" style="display:none">
     <div class="drawer-inner">
       <div class="drawer-header">
-        <h2>Log maintenance</h2>
+        <h2 id="log-drawer-title">Log maintenance</h2>
         <button class="icon-btn" onclick="closeDrawer('log-drawer')"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="form-group">
@@ -227,7 +229,7 @@
         <textarea id="log-notes" rows="2"></textarea>
       </div>
       <div id="log-save-error" class="auth-error" style="display:none"></div>
-      <button class="primary-btn" onclick="saveLogEntry()">Save entry</button>
+      <button class="primary-btn" id="log-save-btn" onclick="saveLogEntry()">Save entry</button>
     </div>
   </div>
 
@@ -236,7 +238,10 @@
     <div class="drawer-inner">
       <div class="drawer-header">
         <h2 id="detail-title"></h2>
-        <button class="icon-btn" onclick="closeDrawer('asset-detail-drawer')"><i class="fa-solid fa-xmark"></i></button>
+        <div style="display:flex;gap:4px">
+          <button class="icon-btn" onclick="showEditAsset(selectedAssetId)" title="Edit asset"><i class="fa-solid fa-pen"></i></button>
+          <button class="icon-btn" onclick="closeDrawer('asset-detail-drawer')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
       </div>
       <div id="detail-meta" class="detail-meta"></div>
       <div class="drawer-section-label" style="margin-top:20px">Maintenance tasks</div>
@@ -284,7 +289,7 @@
   <div id="drawer-overlay" class="drawer-overlay" style="display:none" onclick="closeAllDrawers()"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

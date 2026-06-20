@@ -1,6 +1,6 @@
 // ==============================================
 // ADULTING — HOME MAINTENANCE TRACKER
-// app.js v4
+// app.js v5
 // ==============================================
 
 const SUPABASE_URL  = 'https://vzgozesfrdluibzvqdcp.supabase.co';
@@ -19,6 +19,8 @@ let defaultTasks    = [];
 let selectedCat     = 'hvac';
 let selectedAssetId = null;
 let selectedTaskId  = null;
+let editingAssetId  = null;   // null = adding new, string = editing existing
+let editingLogId    = null;   // null = new log entry, string = editing existing
 
 // Estimated repair cost avoided per task completion (rough averages)
 const REPAIR_VALUE = {
@@ -461,7 +463,11 @@ async function completeCurrentTask() {
 // ADD ASSET
 // ==============================================
 function showAddAsset() {
+  editingAssetId = null;
   selectedCat = 'hvac';
+  document.getElementById('asset-drawer-title').textContent = 'Add asset';
+  document.getElementById('asset-save-btn').textContent = 'Save asset';
+  document.getElementById('suggested-tasks-section').style.display = 'block';
   document.querySelectorAll('#category-chips .chip').forEach(c => {
     c.classList.toggle('active', c.dataset.cat === 'hvac');
   });
@@ -471,6 +477,34 @@ function showAddAsset() {
   document.getElementById('asset-install-year').value  = '';
   document.getElementById('asset-install-month').value = '';
   renderSuggestedTasks('hvac');
+  openDrawer('asset-drawer');
+}
+
+function showEditAsset(id) {
+  const asset = allAssets.find(a => a.id === id);
+  if (!asset) return;
+  editingAssetId = id;
+  selectedCat = asset.category;
+
+  document.getElementById('asset-drawer-title').textContent = 'Edit asset';
+  document.getElementById('asset-save-btn').textContent = 'Update asset';
+  document.getElementById('suggested-tasks-section').style.display = 'none';
+
+  // Set category chip
+  document.querySelectorAll('#category-chips .chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.cat === asset.category);
+  });
+
+  // Fill fields
+  document.getElementById('asset-name').value          = asset.name || '';
+  document.getElementById('asset-brand').value         = asset.brand || '';
+  document.getElementById('asset-model').value         = asset.model || '';
+  document.getElementById('asset-notes').value         = asset.notes || '';
+  document.getElementById('asset-install-year').value  = asset.install_year || '';
+  document.getElementById('asset-install-month').value = asset.install_month || '';
+
+  document.getElementById('asset-save-error').style.display = 'none';
+  closeDrawer('asset-detail-drawer');
   openDrawer('asset-drawer');
 }
 
@@ -499,9 +533,7 @@ async function saveAsset() {
 
   const installYear  = parseInt(document.getElementById('asset-install-year').value) || null;
   const installMonth = parseInt(document.getElementById('asset-install-month').value) || null;
-
-  const { data: asset, error } = await sb.from('assets').insert({
-    user_id:       currentUser.id,
+  const payload = {
     category:      selectedCat,
     name,
     brand:         document.getElementById('asset-brand').value.trim() || null,
@@ -509,24 +541,32 @@ async function saveAsset() {
     install_year:  installYear,
     install_month: installMonth,
     notes:         document.getElementById('asset-notes').value.trim() || null
-  }).select().single();
+  };
 
-  if (error) { showError('asset-save-error', error.message); return; }
+  if (editingAssetId) {
+    // UPDATE existing asset
+    const { error } = await sb.from('assets').update(payload).eq('id', editingAssetId);
+    if (error) { showError('asset-save-error', error.message); return; }
+  } else {
+    // INSERT new asset + suggested tasks
+    const { data: asset, error } = await sb.from('assets')
+      .insert({ ...payload, user_id: currentUser.id }).select().single();
+    if (error) { showError('asset-save-error', error.message); return; }
 
-  // Save selected maintenance tasks
-  const checked = document.querySelectorAll('#suggested-tasks input[type="checkbox"]:checked');
-  if (checked.length > 0) {
-    const taskRows = Array.from(checked).map(cb => {
-      const nextDue = computeNextDue(installYear, installMonth, parseInt(cb.dataset.interval));
-      return {
-        asset_id:     asset.id,
-        user_id:      currentUser.id,
-        name:         cb.dataset.name,
-        interval_days: parseInt(cb.dataset.interval),
-        next_due_at:  nextDue
-      };
-    });
-    await sb.from('maintenance_tasks').insert(taskRows);
+    const checked = document.querySelectorAll('#suggested-tasks input[type="checkbox"]:checked');
+    if (checked.length > 0) {
+      const taskRows = Array.from(checked).map(cb => {
+        const nextDue = computeNextDue(installYear, installMonth, parseInt(cb.dataset.interval));
+        return {
+          asset_id:      asset.id,
+          user_id:       currentUser.id,
+          name:          cb.dataset.name,
+          interval_days: parseInt(cb.dataset.interval),
+          next_due_at:   nextDue
+        };
+      });
+      await sb.from('maintenance_tasks').insert(taskRows);
+    }
   }
 
   closeDrawer('asset-drawer');
@@ -579,7 +619,12 @@ async function completeTask(taskId) {
 // LOG ENTRY
 // ==============================================
 function showLogEntry() {
-  // Populate asset dropdown
+  editingLogId = null;
+  document.getElementById('log-drawer-title').textContent = 'Log maintenance';
+  document.getElementById('log-save-btn').textContent = 'Save entry';
+  document.getElementById('log-asset').disabled = false;
+  document.getElementById('log-task').disabled  = false;
+
   const assetSel = document.getElementById('log-asset');
   assetSel.innerHTML = '<option value="">Select asset…</option>' +
     allAssets.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
@@ -589,6 +634,37 @@ function showLogEntry() {
   document.getElementById('log-cost').value    = '';
   document.getElementById('log-done-by').value = '';
   document.getElementById('log-notes').value   = '';
+  document.getElementById('log-save-error').style.display = 'none';
+  openDrawer('log-drawer');
+}
+
+function showEditLogEntry(entryId) {
+  const entry = allLog.find(e => e.id === entryId);
+  if (!entry) return;
+  editingLogId = entryId;
+
+  document.getElementById('log-drawer-title').textContent = 'Edit log entry';
+  document.getElementById('log-save-btn').textContent = 'Update entry';
+
+  // Populate asset dropdown and lock it (can't change asset on edit)
+  const assetSel = document.getElementById('log-asset');
+  assetSel.innerHTML = allAssets.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  assetSel.value    = entry.asset_id;
+  assetSel.disabled = true;
+
+  // Populate task dropdown
+  const tasks = allTasks.filter(t => t.asset_id === entry.asset_id);
+  const taskSel = document.getElementById('log-task');
+  taskSel.innerHTML = '<option value="">General maintenance</option>' +
+    tasks.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  taskSel.value    = entry.task_id || '';
+  taskSel.disabled = true;
+
+  document.getElementById('log-date').value    = entry.completed_at.split('T')[0];
+  document.getElementById('log-cost').value    = entry.cost || '';
+  document.getElementById('log-done-by').value = entry.done_by || '';
+  document.getElementById('log-notes').value   = entry.notes || '';
+  document.getElementById('log-save-error').style.display = 'none';
   openDrawer('log-drawer');
 }
 
@@ -609,30 +685,80 @@ async function saveLogEntry() {
   const taskId = document.getElementById('log-task').value || null;
   const date   = document.getElementById('log-date').value;
   const cost   = parseFloat(document.getElementById('log-cost').value) || 0;
-
-  const { error } = await sb.from('maintenance_log').insert({
-    task_id:      taskId,
-    asset_id:     assetId,
-    user_id:      currentUser.id,
+  const payload = {
     completed_at: new Date(date).toISOString(),
     cost,
-    done_by:      document.getElementById('log-done-by').value.trim() || null,
-    notes:        document.getElementById('log-notes').value.trim() || null
-  });
+    done_by: document.getElementById('log-done-by').value.trim() || null,
+    notes:   document.getElementById('log-notes').value.trim() || null
+  };
 
-  if (error) { showError('log-save-error', error.message); return; }
-
-  // If a task was selected, update its next due date
-  if (taskId) {
-    const task    = allTasks.find(t => t.id === taskId);
-    const nextDue = new Date(new Date(date).getTime() + task.interval_days * 86400000);
-    await sb.from('maintenance_tasks').update({
-      last_completed_at: new Date(date).toISOString(),
-      next_due_at:       nextDue.toISOString()
-    }).eq('id', taskId);
+  if (editingLogId) {
+    // UPDATE existing log entry
+    const { error } = await sb.from('maintenance_log').update(payload).eq('id', editingLogId);
+    if (error) { showError('log-save-error', error.message); return; }
+    // If a task is linked, recalculate its next_due based on the new date
+    if (taskId) {
+      const task    = allTasks.find(t => t.id === taskId);
+      const nextDue = new Date(new Date(date).getTime() + task.interval_days * 86400000);
+      await sb.from('maintenance_tasks').update({
+        last_completed_at: new Date(date).toISOString(),
+        next_due_at:       nextDue.toISOString()
+      }).eq('id', taskId);
+    }
+  } else {
+    // INSERT new log entry
+    const { error } = await sb.from('maintenance_log').insert({
+      ...payload, task_id: taskId, asset_id: assetId, user_id: currentUser.id
+    });
+    if (error) { showError('log-save-error', error.message); return; }
+    if (taskId) {
+      const task    = allTasks.find(t => t.id === taskId);
+      const nextDue = new Date(new Date(date).getTime() + task.interval_days * 86400000);
+      await sb.from('maintenance_tasks').update({
+        last_completed_at: new Date(date).toISOString(),
+        next_due_at:       nextDue.toISOString()
+      }).eq('id', taskId);
+    }
   }
 
   closeDrawer('log-drawer');
+  await refreshAll();
+}
+
+async function deleteLogEntry(entryId) {
+  const entry = allLog.find(e => e.id === entryId);
+  if (!confirm('Remove this log entry?')) return;
+
+  await sb.from('maintenance_log').delete().eq('id', entryId);
+
+  // If the entry was linked to a task, roll back the task's last_completed_at / next_due
+  if (entry?.task_id) {
+    const task = allTasks.find(t => t.id === entry.task_id);
+    // Find the most recent remaining log entry for this task (excluding the one we just deleted)
+    const { data: remaining } = await sb.from('maintenance_log')
+      .select('completed_at')
+      .eq('task_id', entry.task_id)
+      .order('completed_at', { ascending: false })
+      .limit(1);
+
+    if (remaining && remaining.length > 0) {
+      const prevDate = remaining[0].completed_at;
+      const nextDue  = new Date(new Date(prevDate).getTime() + (task?.interval_days || 365) * 86400000);
+      await sb.from('maintenance_tasks').update({
+        last_completed_at: prevDate,
+        next_due_at:       nextDue.toISOString()
+      }).eq('id', entry.task_id);
+    } else {
+      // No remaining entries — restore to initial state
+      const asset = allAssets.find(a => a.id === entry.asset_id);
+      const nextDue = computeNextDue(asset?.install_year, asset?.install_month, task?.interval_days || 365);
+      await sb.from('maintenance_tasks').update({
+        last_completed_at: null,
+        next_due_at:       nextDue
+      }).eq('id', entry.task_id);
+    }
+  }
+
   await refreshAll();
 }
 
@@ -659,6 +785,10 @@ function renderLog() {
           <div class="log-meta">${assetName} · ${date}${by}</div>
         </div>
         <div class="log-cost">${costStr}</div>
+        <div class="log-actions">
+          <button class="log-action-btn" onclick="showEditLogEntry('${entry.id}')" title="Edit"><i class="fa-solid fa-pen"></i></button>
+          <button class="log-action-btn danger" onclick="deleteLogEntry('${entry.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
+        </div>
       </div>`;
   }).join('');
 }
