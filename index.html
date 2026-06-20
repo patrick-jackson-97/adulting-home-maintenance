@@ -249,10 +249,42 @@
     </div>
   </div>
 
+  <!-- TASK DETAIL DRAWER -->
+  <div id="task-detail-drawer" class="drawer" style="display:none">
+    <div class="drawer-inner">
+      <div class="drawer-header">
+        <h2 id="td-name"></h2>
+        <button class="icon-btn" onclick="closeDrawer('task-detail-drawer')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="td-meta" class="td-meta"></div>
+      <div id="td-description" class="td-section" style="display:none">
+        <div class="td-section-label"><i class="fa-solid fa-circle-info"></i> Why this matters</div>
+        <p id="td-description-text" class="td-body"></p>
+      </div>
+      <div id="td-how" class="td-section" style="display:none">
+        <div class="td-section-label"><i class="fa-solid fa-list-check"></i> How to do it</div>
+        <ol id="td-how-steps" class="td-steps"></ol>
+      </div>
+      <div id="td-parts" class="td-section" style="display:none">
+        <div class="td-section-label"><i class="fa-solid fa-bag-shopping"></i> Parts &amp; supplies</div>
+        <p id="td-parts-text" class="td-body"></p>
+      </div>
+      <div id="td-tools" class="td-section" style="display:none">
+        <div class="td-section-label"><i class="fa-solid fa-screwdriver-wrench"></i> Tools needed</div>
+        <p id="td-tools-text" class="td-body"></p>
+      </div>
+      <div class="td-actions">
+        <button class="primary-btn" id="td-complete-btn" onclick="completeCurrentTask()">
+          <i class="fa-solid fa-check"></i> Mark done
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="drawer-overlay" class="drawer-overlay" style="display:none" onclick="closeAllDrawers()"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

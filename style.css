@@ -801,6 +801,105 @@ body {
 .task-item.initial { border-left: 3px solid #6366f1; }
 .task-due.initial { color: #6366f1; }
 
+/* ── TASK ITEM — CLICKABLE ── */
+.task-item { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.task-item:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.task-chevron { font-size: 12px; color: var(--border); flex-shrink: 0; }
+.task-item:hover .task-chevron { color: var(--primary); }
+
+/* ── TASK DETAIL DRAWER ── */
+.td-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.td-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.td-pill.overdue { background: var(--red-light); color: var(--red); border-color: transparent; }
+.td-pill.soon    { background: var(--amber-light); color: var(--amber); border-color: transparent; }
+.td-pill.initial { background: #ede9fe; color: #5b21b6; border-color: transparent; }
+.td-pill.ok      { background: var(--primary-light); color: var(--primary-dark); border-color: transparent; }
+
+.td-section {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.td-section-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.td-section-label i { color: var(--primary); font-size: 13px; }
+
+.td-body {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.td-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  counter-reset: steps;
+}
+
+.td-steps li {
+  display: flex;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+  counter-increment: steps;
+}
+
+.td-steps li::before {
+  content: counter(steps);
+  min-width: 24px;
+  height: 24px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.td-actions {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 420px) {
   .stat-num { font-size: 22px; }

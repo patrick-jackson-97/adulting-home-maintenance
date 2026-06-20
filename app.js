@@ -1,6 +1,6 @@
 // ==============================================
 // ADULTING — HOME MAINTENANCE TRACKER
-// app.js v3
+// app.js v4
 // ==============================================
 
 const SUPABASE_URL  = 'https://vzgozesfrdluibzvqdcp.supabase.co';
@@ -11,13 +11,14 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ==============================================
 // STATE
 // ==============================================
-let currentUser    = null;
-let allAssets      = [];
-let allTasks       = [];
-let allLog         = [];
-let defaultTasks   = [];
-let selectedCat    = 'hvac';
+let currentUser     = null;
+let allAssets       = [];
+let allTasks        = [];
+let allLog          = [];
+let defaultTasks    = [];
+let selectedCat     = 'hvac';
 let selectedAssetId = null;
+let selectedTaskId  = null;
 
 // Estimated repair cost avoided per task completion (rough averages)
 const REPAIR_VALUE = {
@@ -152,7 +153,8 @@ async function showApp() {
 // DATA LOADING
 // ==============================================
 async function loadDefaultTasks() {
-  const { data } = await sb.from('default_tasks').select('*');
+  const { data } = await sb.from('default_tasks')
+    .select('id, category, name, interval_days, description, tips_parts, tips_tools, tips_how');
   defaultTasks = data || [];
 }
 
@@ -237,8 +239,8 @@ function taskItemHTML(task, type) {
   }
 
   return `
-    <div class="task-item ${dueClass}">
-      <button class="task-check-btn" onclick="completeTask('${task.id}')" title="Mark done">
+    <div class="task-item ${dueClass}" onclick="openTaskDetail('${task.id}')">
+      <button class="task-check-btn" onclick="event.stopPropagation(); completeTask('${task.id}')" title="Mark done">
         <i class="fa-solid fa-check" style="display:none"></i>
       </button>
       <div class="task-info">
@@ -246,6 +248,7 @@ function taskItemHTML(task, type) {
         <div class="task-meta">${assetName} · ${interval}</div>
       </div>
       <div class="task-due ${dueClass}">${dueLabel}</div>
+      <i class="fa-solid fa-chevron-right task-chevron"></i>
     </div>`;
 }
 
@@ -366,6 +369,92 @@ async function deleteAsset(id) {
   if (error) { alert('Error deleting asset: ' + error.message); return; }
   closeDrawer('asset-detail-drawer');
   await refreshAll();
+}
+
+// ==============================================
+// TASK DETAIL
+// ==============================================
+function openTaskDetail(taskId) {
+  const task = allTasks.find(t => t.id === taskId);
+  if (!task) return;
+  selectedTaskId = taskId;
+
+  // Header
+  document.getElementById('td-name').textContent = task.name;
+
+  // Status / meta pills
+  const due     = task.next_due_at ? new Date(task.next_due_at) : null;
+  const now     = new Date();
+  const asset   = allAssets.find(a => a.id === task.asset_id);
+  const icon    = asset ? (CATEGORY_ICONS[asset.category] || 'fa-box') : 'fa-box';
+
+  let statusLabel = '', statusClass = 'ok';
+  if (due) {
+    const diff = Math.round((due - now) / 86400000);
+    if (diff < 0) {
+      if (!task.last_completed_at) { statusLabel = 'Initial setup'; statusClass = 'initial'; }
+      else { statusLabel = `${Math.abs(diff)} days overdue`; statusClass = 'overdue'; }
+    } else if (diff === 0) { statusLabel = 'Due today'; statusClass = 'soon'; }
+    else if (diff <= 14)   { statusLabel = `Due in ${diff} days`; statusClass = 'soon'; }
+    else { statusLabel = `Due in ${Math.round(diff/7)} weeks`; statusClass = 'ok'; }
+  }
+
+  const lastDone = task.last_completed_at
+    ? 'Last done ' + new Date(task.last_completed_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })
+    : 'Never completed';
+
+  document.getElementById('td-meta').innerHTML = `
+    ${statusLabel ? `<span class="td-pill ${statusClass}"><i class="fa-solid fa-clock"></i>${statusLabel}</span>` : ''}
+    <span class="td-pill"><i class="fa-solid ${icon}"></i>${asset?.name || 'Unknown asset'}</span>
+    <span class="td-pill"><i class="fa-solid fa-rotate"></i>${intervalLabel(task.interval_days)}</span>
+    <span class="td-pill"><i class="fa-solid fa-history"></i>${lastDone}</span>`;
+
+  // Rich content — match against default_tasks by name
+  const def = defaultTasks.find(d =>
+    d.name.toLowerCase() === task.name.toLowerCase() ||
+    task.name.toLowerCase().includes(d.name.toLowerCase()) ||
+    d.name.toLowerCase().includes(task.name.toLowerCase())
+  );
+
+  function showSection(sectionId, textId, content) {
+    const el = document.getElementById(sectionId);
+    if (content) { el.style.display = 'block'; document.getElementById(textId).textContent = content; }
+    else { el.style.display = 'none'; }
+  }
+
+  if (def) {
+    showSection('td-description', 'td-description-text', def.description);
+    showSection('td-parts',       'td-parts-text',        def.tips_parts);
+    showSection('td-tools',       'td-tools-text',        def.tips_tools);
+
+    const howEl = document.getElementById('td-how');
+    if (def.tips_how) {
+      howEl.style.display = 'block';
+      const steps = def.tips_how.split('\n').filter(s => s.trim());
+      document.getElementById('td-how-steps').innerHTML = steps
+        .map(s => `<li>${s.replace(/^\d+\.\s*/, '')}</li>`)
+        .join('');
+    } else {
+      howEl.style.display = 'none';
+    }
+  } else {
+    ['td-description','td-how','td-parts','td-tools'].forEach(id => {
+      document.getElementById(id).style.display = 'none';
+    });
+  }
+
+  openDrawer('task-detail-drawer');
+}
+
+async function completeCurrentTask() {
+  if (!selectedTaskId) return;
+  const btn = document.getElementById('td-complete-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  await completeTask(selectedTaskId);
+  closeDrawer('task-detail-drawer');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-check"></i> Mark done';
 }
 
 // ==============================================
@@ -638,7 +727,7 @@ function closeDrawer(id) {
 }
 
 function closeAllDrawers() {
-  ['asset-drawer','log-drawer','asset-detail-drawer'].forEach(id => {
+  ['asset-drawer','log-drawer','asset-detail-drawer','task-detail-drawer'].forEach(id => {
     document.getElementById(id).style.display = 'none';
   });
   document.getElementById('drawer-overlay').style.display = 'none';
