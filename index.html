@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="Home Maintenance">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -161,6 +161,13 @@
           <button type="button" class="chip" data-cat="other" onclick="selectCategory(this)"><i class="fa-solid fa-box"></i> Other</button>
         </div>
       </div>
+      <!-- Equipment picker -->
+      <div class="form-group" id="equip-picker-group">
+        <label>Equipment type <span class="optional">(optional — helps identify your equipment)</span></label>
+        <div id="equip-list" class="equip-list"></div>
+        <div id="equip-tip" class="equip-tip" style="display:none"></div>
+      </div>
+
       <div class="form-group">
         <label>Asset name</label>
         <input type="text" id="asset-name" placeholder="e.g. Carrier Furnace">
@@ -289,7 +296,7 @@
   <div id="drawer-overlay" class="drawer-overlay" style="display:none" onclick="closeAllDrawers()"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
