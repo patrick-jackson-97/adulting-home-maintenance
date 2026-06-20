@@ -1,6 +1,6 @@
 // ==============================================
 // ADULTING — HOME MAINTENANCE TRACKER
-// app.js v2
+// app.js v3
 // ==============================================
 
 const SUPABASE_URL  = 'https://vzgozesfrdluibzvqdcp.supabase.co';
@@ -11,12 +11,13 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ==============================================
 // STATE
 // ==============================================
-let currentUser   = null;
-let allAssets     = [];
-let allTasks      = [];
-let allLog        = [];
-let defaultTasks  = [];
-let selectedCat   = 'hvac';
+let currentUser    = null;
+let allAssets      = [];
+let allTasks       = [];
+let allLog         = [];
+let defaultTasks   = [];
+let selectedCat    = 'hvac';
+let selectedAssetId = null;
 
 // Estimated repair cost avoided per task completion (rough averages)
 const REPAIR_VALUE = {
@@ -197,7 +198,7 @@ function renderDashboard() {
   const now   = new Date();
   const soon  = new Date(now); soon.setDate(soon.getDate() + 60);
 
-  const overdue  = allTasks.filter(t => t.next_due_at && new Date(t.next_due_at) < now);
+  const overdue  = allTasks.filter(t => t.next_due_at && new Date(t.next_due_at) < now && t.last_completed_at);
   const upcoming = allTasks.filter(t => {
     const d = t.next_due_at ? new Date(t.next_due_at) : null;
     return d && d >= now && d <= soon;
@@ -226,7 +227,10 @@ function taskItemHTML(task, type) {
   let dueLabel = '', dueClass = 'ok';
   if (due) {
     const diff = Math.round((due - now) / 86400000);
-    if (diff < 0) { dueLabel = `${Math.abs(diff)}d overdue`; dueClass = 'overdue'; }
+    if (diff < 0) {
+      if (!task.last_completed_at) { dueLabel = 'Initial'; dueClass = 'initial'; }
+      else { dueLabel = `${Math.abs(diff)}d overdue`; dueClass = 'overdue'; }
+    }
     else if (diff === 0) { dueLabel = 'Due today'; dueClass = 'soon'; }
     else if (diff <= 14) { dueLabel = `In ${diff}d`; dueClass = 'soon'; }
     else { dueLabel = `In ${Math.round(diff / 7)}w`; dueClass = 'ok'; }
@@ -312,8 +316,56 @@ function monthName(m) {
 }
 
 function openAsset(id) {
-  // TODO: asset detail drawer (next iteration)
-  console.log('open asset', id);
+  const asset = allAssets.find(a => a.id === id);
+  if (!asset) return;
+  selectedAssetId = id;
+
+  document.getElementById('detail-title').textContent = asset.name;
+
+  // Info grid
+  const fields = [];
+  if (asset.brand)  fields.push(['Brand', asset.brand]);
+  if (asset.model)  fields.push(['Model', asset.model]);
+  if (asset.install_year) {
+    const yr = (asset.install_month ? monthName(asset.install_month) + ' ' : '') + asset.install_year;
+    fields.push(['Installed', yr]);
+  }
+  const catLabel = { hvac:'HVAC', water:'Water', appliance:'Appliance',
+    electrical:'Electrical', plumbing:'Plumbing', roof:'Roof/Exterior', other:'Other' }[asset.category] || asset.category;
+  fields.push(['Category', catLabel]);
+
+  let gridHTML = '<div class="detail-info-grid">';
+  fields.forEach(([label, val]) => {
+    gridHTML += `<div class="detail-info-item"><div class="detail-info-label">${label}</div><div class="detail-info-value">${val}</div></div>`;
+  });
+  if (asset.notes) {
+    gridHTML += `<div class="detail-info-item full-width"><div class="detail-info-label">Notes</div><div class="detail-info-value">${asset.notes}</div></div>`;
+  }
+  gridHTML += '</div>';
+  document.getElementById('detail-meta').innerHTML = gridHTML;
+
+  // Tasks
+  const tasks = allTasks.filter(t => t.asset_id === id);
+  const tasksEl = document.getElementById('detail-tasks');
+  tasksEl.innerHTML = tasks.length
+    ? tasks.map(t => taskItemHTML(t, 'detail')).join('')
+    : '<div class="empty-state" style="padding:16px 0"><p>No tasks added yet.</p></div>';
+
+  openDrawer('asset-detail-drawer');
+}
+
+async function confirmDeleteAsset() {
+  if (!confirm('Delete this asset and all its maintenance data? This can\'t be undone.')) return;
+  await deleteAsset(selectedAssetId);
+}
+
+async function deleteAsset(id) {
+  await sb.from('maintenance_log').delete().eq('asset_id', id);
+  await sb.from('maintenance_tasks').delete().eq('asset_id', id);
+  const { error } = await sb.from('assets').delete().eq('id', id);
+  if (error) { alert('Error deleting asset: ' + error.message); return; }
+  closeDrawer('asset-detail-drawer');
+  await refreshAll();
 }
 
 // ==============================================
@@ -586,7 +638,7 @@ function closeDrawer(id) {
 }
 
 function closeAllDrawers() {
-  ['asset-drawer','log-drawer'].forEach(id => {
+  ['asset-drawer','log-drawer','asset-detail-drawer'].forEach(id => {
     document.getElementById(id).style.display = 'none';
   });
   document.getElementById('drawer-overlay').style.display = 'none';
