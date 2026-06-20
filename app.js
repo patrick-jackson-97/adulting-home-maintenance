@@ -165,7 +165,7 @@ async function refreshAll() {
 }
 
 async function loadAssets() {
-  const { data } = await supabase
+  const { data } = await sb
     .from('assets')
     .select('*')
     .order('created_at', { ascending: false });
@@ -173,7 +173,7 @@ async function loadAssets() {
 }
 
 async function loadTasks() {
-  const { data } = await supabase
+  const { data } = await sb
     .from('maintenance_tasks')
     .select('*, assets(name, category)')
     .eq('is_active', true)
@@ -182,7 +182,7 @@ async function loadTasks() {
 }
 
 async function loadLog() {
-  const { data } = await supabase
+  const { data } = await sb
     .from('maintenance_log')
     .select('*, assets(name, category), maintenance_tasks(name)')
     .order('completed_at', { ascending: false })
