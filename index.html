@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="Home Maintenance">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -111,6 +111,64 @@
         <div id="asset-list"><div class="empty-state"><i class="fa-solid fa-wrench"></i><p>No assets yet. Add your first one!</p></div></div>
       </div>
 
+      <!-- TASKS -->
+      <div id="page-tasks" class="page">
+        <div class="page-header"><h1>All tasks</h1></div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <!-- Timeline -->
+          <div class="filter-group">
+            <label class="filter-label">Timeline</label>
+            <div class="filter-chips" id="filter-timeline">
+              <button class="filter-chip active" data-val="all"    onclick="setFilter('timeline',this)">All</button>
+              <button class="filter-chip"        data-val="initial" onclick="setFilter('timeline',this)">Initial</button>
+              <button class="filter-chip"        data-val="overdue" onclick="setFilter('timeline',this)">Overdue</button>
+              <button class="filter-chip"        data-val="7"      onclick="setFilter('timeline',this)">Next 7d</button>
+              <button class="filter-chip"        data-val="30"     onclick="setFilter('timeline',this)">Next 30d</button>
+              <button class="filter-chip"        data-val="90"     onclick="setFilter('timeline',this)">Next 90d</button>
+            </div>
+          </div>
+
+          <!-- Asset -->
+          <div class="filter-group">
+            <label class="filter-label">Asset</label>
+            <select class="filter-select" id="filter-asset" onchange="applyTaskFilters()">
+              <option value="">All assets</option>
+            </select>
+          </div>
+
+          <!-- Category -->
+          <div class="filter-group">
+            <label class="filter-label">Category</label>
+            <select class="filter-select" id="filter-category" onchange="applyTaskFilters()">
+              <option value="">All categories</option>
+              <option value="hvac">HVAC</option>
+              <option value="water">Water</option>
+              <option value="appliance">Appliance</option>
+              <option value="electrical">Electrical</option>
+              <option value="plumbing">Plumbing</option>
+              <option value="roof">Roof</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <!-- Sort -->
+          <div class="filter-group">
+            <label class="filter-label">Sort</label>
+            <select class="filter-select" id="filter-sort" onchange="applyTaskFilters()">
+              <option value="due_asc">Due date ↑</option>
+              <option value="due_desc">Due date ↓</option>
+              <option value="name_asc">Name A–Z</option>
+              <option value="asset_asc">Asset A–Z</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="tasks-count" class="filter-count"></div>
+        <div id="tasks-list" class="task-list"></div>
+      </div>
+
       <!-- LOG -->
       <div id="page-log" class="page">
         <div class="page-header">
@@ -137,6 +195,7 @@
     <nav class="bottom-nav">
       <button class="nav-item active" onclick="showPage('dashboard', this)"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></button>
       <button class="nav-item" onclick="showPage('assets', this)"><i class="fa-solid fa-wrench"></i><span>Assets</span></button>
+      <button class="nav-item" onclick="showPage('tasks', this); renderTasksPage()"><i class="fa-solid fa-list-check"></i><span>Tasks</span></button>
       <button class="nav-item" onclick="showPage('log', this)"><i class="fa-solid fa-clipboard-list"></i><span>Log</span></button>
       <button class="nav-item" onclick="showPage('savings', this)"><i class="fa-solid fa-chart-bar"></i><span>Savings</span></button>
     </nav>
@@ -296,7 +355,7 @@
   <div id="drawer-overlay" class="drawer-overlay" style="display:none" onclick="closeAllDrawers()"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

@@ -1,6 +1,6 @@
 // ==============================================
 // ADULTING — HOME MAINTENANCE TRACKER
-// app.js v5
+// app.js v7
 // ==============================================
 
 const SUPABASE_URL  = 'https://vzgozesfrdluibzvqdcp.supabase.co';
@@ -21,6 +21,9 @@ let selectedAssetId = null;
 let selectedTaskId  = null;
 let editingAssetId  = null;   // null = adding new, string = editing existing
 let editingLogId    = null;   // null = new log entry, string = editing existing
+
+// Tasks page filter state
+let taskFilters = { timeline: 'all', asset: '', category: '', sort: 'due_asc' };
 
 // Estimated repair cost avoided per task completion (rough averages)
 const REPAIR_VALUE = {
@@ -400,6 +403,90 @@ function renderDashboard() {
   upcomingEl.innerHTML = upcoming.length
     ? upcoming.map(t => taskItemHTML(t, 'upcoming')).join('')
     : '<div class="empty-state"><i class="fa-solid fa-circle-check"></i><p>All caught up!</p></div>';
+}
+
+// ==============================================
+// TASKS PAGE
+// ==============================================
+function renderTasksPage() {
+  // Populate asset dropdown
+  const assetSel = document.getElementById('filter-asset');
+  const currentVal = assetSel.value;
+  assetSel.innerHTML = '<option value="">All assets</option>' +
+    allAssets.map(a => `<option value="${a.id}" ${currentVal === a.id ? 'selected' : ''}>${a.name}</option>`).join('');
+
+  applyTaskFilters();
+}
+
+function setFilter(type, btn) {
+  document.querySelectorAll(`#filter-${type} .filter-chip`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  taskFilters[type] = btn.dataset.val;
+  applyTaskFilters();
+}
+
+function applyTaskFilters() {
+  // Read select values
+  taskFilters.asset    = document.getElementById('filter-asset').value;
+  taskFilters.category = document.getElementById('filter-category').value;
+  taskFilters.sort     = document.getElementById('filter-sort').value;
+
+  const now  = new Date();
+  let tasks  = [...allTasks];
+
+  // Timeline filter
+  const tl = taskFilters.timeline;
+  if (tl === 'initial') {
+    tasks = tasks.filter(t => !t.last_completed_at);
+  } else if (tl === 'overdue') {
+    tasks = tasks.filter(t => t.last_completed_at && t.next_due_at && new Date(t.next_due_at) < now);
+  } else if (tl !== 'all') {
+    const days = parseInt(tl, 10);
+    const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() + days);
+    tasks = tasks.filter(t => {
+      if (!t.next_due_at) return false;
+      const d = new Date(t.next_due_at);
+      return d >= now && d <= cutoff;
+    });
+  }
+
+  // Asset filter
+  if (taskFilters.asset) {
+    tasks = tasks.filter(t => t.asset_id === taskFilters.asset);
+  }
+
+  // Category filter — match via asset
+  if (taskFilters.category) {
+    const assetIds = new Set(allAssets.filter(a => a.category === taskFilters.category).map(a => a.id));
+    tasks = tasks.filter(t => assetIds.has(t.asset_id));
+  }
+
+  // Sort
+  tasks.sort((a, b) => {
+    switch (taskFilters.sort) {
+      case 'due_asc':
+        return (a.next_due_at || '9999') < (b.next_due_at || '9999') ? -1 : 1;
+      case 'due_desc':
+        return (a.next_due_at || '') > (b.next_due_at || '') ? -1 : 1;
+      case 'name_asc':
+        return a.name.localeCompare(b.name);
+      case 'asset_asc': {
+        const an = a.assets?.name || '';
+        const bn = b.assets?.name || '';
+        return an.localeCompare(bn);
+      }
+    }
+    return 0;
+  });
+
+  // Render
+  const count = document.getElementById('tasks-count');
+  count.textContent = tasks.length === 1 ? '1 task' : `${tasks.length} tasks`;
+
+  const list = document.getElementById('tasks-list');
+  list.innerHTML = tasks.length
+    ? tasks.map(t => taskItemHTML(t)).join('')
+    : '<div class="empty-state"><i class="fa-solid fa-circle-check"></i><p>No tasks match these filters.</p></div>';
 }
 
 function taskItemHTML(task, type) {
