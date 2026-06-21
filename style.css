@@ -1475,8 +1475,30 @@ body {
 }
 .intake-other-cat-select:focus { outline: none; border-color: var(--primary); }
 
-/* Desktop — full page feel, not a modal */
-@media (min-width: 640px) {
+/* ── INTAKE DESKTOP LAYOUT ── */
+
+/* Centered pages: welcome + summary */
+.intake-centered-page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Room layout: sidebar + main content */
+.intake-room-layout {
+  display: flex;
+  min-height: calc(100vh - 56px);
+}
+
+/* Sidebar hidden on mobile */
+.intake-sidebar { display: none; }
+
+.intake-room-main {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  /* Full-page overlay — not a modal */
   #intake-overlay {
     display: block !important;
     background: var(--bg) !important;
@@ -1484,28 +1506,109 @@ body {
   #intake-inner {
     width: 100%;
     min-height: 100vh;
+  }
+  .intake-topbar { border-radius: 0; }
+
+  /* Welcome + summary: centered at comfortable reading width */
+  .intake-centered-page {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Sidebar */
+  .intake-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 230px;
+    flex-shrink: 0;
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    padding: 28px 14px;
+    gap: 2px;
+    position: sticky;
+    top: 0;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    align-self: flex-start;
+  }
+
+  .intake-sidebar-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    padding: 0 10px 12px;
+  }
+
+  .intake-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: background 0.15s, color 0.15s;
+  }
+  .intake-sidebar-item:not(:disabled):hover { background: var(--bg); color: var(--text); }
+  .intake-sidebar-item:disabled { opacity: 0.4; cursor: default; }
+  .intake-sidebar-item.is-current { background: var(--primary-light); color: var(--primary-dark); font-weight: 600; }
+  .intake-sidebar-item.is-done { color: var(--text); }
+
+  .intake-sidebar-dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    color: var(--text-secondary);
     background: var(--bg);
   }
-  /* Topbar spans the full viewport width */
-  .intake-topbar {
-    border-radius: 0;
-    /* width already 100% since intake-inner is full width */
+  .intake-sidebar-item.is-current .intake-sidebar-dot {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #fff;
   }
-  /* Content sections are centered */
-  .intake-body,
-  .intake-room-header,
-  .intake-welcome-hero {
-    max-width: 680px;
-    margin-left: auto;
-    margin-right: auto;
+  .intake-sidebar-item.is-done .intake-sidebar-dot {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    color: var(--primary);
   }
-  .intake-room-header {
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-  .intake-item-card {
+
+  .intake-sidebar-name { flex: 1; line-height: 1.3; }
+
+  .intake-sidebar-badge {
+    background: var(--primary);
+    color: #fff;
     border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 7px;
+    flex-shrink: 0;
   }
+
+  /* Room main content */
+  .intake-room-main .intake-room-header {
+    padding: 28px 40px 0;
+  }
+  .intake-room-main .intake-body {
+    padding: 20px 40px 48px;
+    max-width: none;
+  }
+
+  .intake-item-card { border-radius: 12px; }
 }
 
 /* Nav */

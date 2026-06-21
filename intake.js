@@ -640,28 +640,53 @@ function renderIntakeWelcome() {
       <div class="intake-topbar-title">Home setup</div>
       <button class="icon-btn" onclick="hideIntake()" style="color:rgba(255,255,255,.7)" title="Close"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <div class="intake-welcome-hero">
-      <div class="intake-welcome-icon-wrap"><i class="fa-solid fa-house-chimney"></i></div>
-      <h1>Let's find out what you've got</h1>
-      <p>Walk through your home with us — takes about 5 minutes. You don't need any model numbers yet.</p>
-    </div>
-    <div class="intake-body">
-      <div class="intake-callout">
-        <i class="fa-solid fa-circle-info"></i>
-        <span>Don't worry if you're unsure about something — identification tips are included for each item, and you can always add more later.</span>
+    <div class="intake-centered-page">
+      <div class="intake-welcome-hero">
+        <div class="intake-welcome-icon-wrap"><i class="fa-solid fa-house-chimney"></i></div>
+        <h1>Let's find out what you've got</h1>
+        <p>Walk through your home with us — takes about 5 minutes. You don't need any model numbers yet.</p>
       </div>
-      <div class="intake-section-label">What we'll cover</div>
-      <div class="intake-room-grid">
-        ${INTAKE_ROOMS.map(r => `
-          <div class="intake-room-chip">
-            <i class="fa-solid ${r.icon}"></i>
-            <span>${r.name}</span>
-          </div>`).join('')}
+      <div class="intake-body">
+        <div class="intake-callout">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Don't worry if you're unsure about something — identification tips are included for each item, and you can always add more later.</span>
+        </div>
+        <div class="intake-section-label">What we'll cover</div>
+        <div class="intake-room-grid">
+          ${INTAKE_ROOMS.map(r => `
+            <div class="intake-room-chip">
+              <i class="fa-solid ${r.icon}"></i>
+              <span>${r.name}</span>
+            </div>`).join('')}
+        </div>
+        <button class="intake-primary-btn" onclick="intakeGo(0)">
+          Start the walkthrough <i class="fa-solid fa-arrow-right"></i>
+        </button>
       </div>
-      <button class="intake-primary-btn" onclick="intakeGo(0)">
-        Start the walkthrough <i class="fa-solid fa-arrow-right"></i>
-      </button>
     </div>`;
+}
+
+function renderIntakeSidebar(currentIdx) {
+  return `
+    <aside class="intake-sidebar">
+      <div class="intake-sidebar-label">Rooms</div>
+      ${INTAKE_ROOMS.map((r, i) => {
+        const isDone    = i < currentIdx;
+        const isCurrent = i === currentIdx;
+        const count     = r.items.filter(it => !it.isOther && intakeAnswers[it.id]?.status === 'yes').length;
+        return `
+          <button class="intake-sidebar-item ${isCurrent ? 'is-current' : ''} ${isDone ? 'is-done' : ''}"
+                  onclick="intakeGo(${i})" ${i > currentIdx ? 'disabled' : ''}>
+            <div class="intake-sidebar-dot">
+              ${isDone
+                ? '<i class="fa-solid fa-check"></i>'
+                : `<i class="fa-solid ${r.icon}"></i>`}
+            </div>
+            <span class="intake-sidebar-name">${r.name}</span>
+            ${isDone && count > 0 ? `<span class="intake-sidebar-badge">${count}</span>` : ''}
+          </button>`;
+      }).join('')}
+    </aside>`;
 }
 
 function renderIntakeRoom(room) {
@@ -674,23 +699,28 @@ function renderIntakeRoom(room) {
       ${renderProgressBar(idx)}
       <button class="icon-btn" onclick="hideIntake()" style="color:rgba(255,255,255,.7)" title="Close"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <div class="intake-room-header">
-      <div class="intake-room-icon"><i class="fa-solid ${room.icon}"></i></div>
-      <div>
-        <div class="intake-step-label">Room ${idx + 1} of ${INTAKE_ROOMS.length}</div>
-        <h2>${room.name}</h2>
-      </div>
-    </div>
-    <div class="intake-body">
-      <p class="intake-intro">${room.intro}</p>
-      ${room.items.map(item => renderIntakeItem(item, excluded)).join('')}
-      <div class="intake-nav-row">
-        <button class="intake-back-btn" onclick="intakeGo(${idx - 1})">
-          <i class="fa-solid fa-arrow-left"></i> ${idx === 0 ? 'Welcome' : 'Back'}
-        </button>
-        <button class="intake-primary-btn" onclick="intakeGo(${idx + 1})">
-          ${isLast ? 'See summary' : 'Next room'} <i class="fa-solid fa-arrow-right"></i>
-        </button>
+    <div class="intake-room-layout">
+      ${renderIntakeSidebar(idx)}
+      <div class="intake-room-main">
+        <div class="intake-room-header">
+          <div class="intake-room-icon"><i class="fa-solid ${room.icon}"></i></div>
+          <div>
+            <div class="intake-step-label">Room ${idx + 1} of ${INTAKE_ROOMS.length}</div>
+            <h2>${room.name}</h2>
+          </div>
+        </div>
+        <div class="intake-body">
+          <p class="intake-intro">${room.intro}</p>
+          ${room.items.map(item => renderIntakeItem(item, excluded)).join('')}
+          <div class="intake-nav-row">
+            <button class="intake-back-btn" onclick="intakeGo(${idx - 1})">
+              <i class="fa-solid fa-arrow-left"></i> ${idx === 0 ? 'Welcome' : 'Back'}
+            </button>
+            <button class="intake-primary-btn" onclick="intakeGo(${idx + 1})">
+              ${isLast ? 'See summary' : 'Next room'} <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
       </div>
     </div>`;
 }
@@ -864,6 +894,7 @@ function renderIntakeSummary() {
       ${renderProgressBar(INTAKE_ROOMS.length + 1)}
       <button class="icon-btn" onclick="hideIntake()" style="color:rgba(255,255,255,.7)" title="Close"><i class="fa-solid fa-xmark"></i></button>
     </div>
+    <div class="intake-centered-page">
     <div class="intake-body">
       <div class="intake-summary-hero">
         <div class="intake-summary-num">${confirmed.length}</div>
@@ -915,6 +946,7 @@ function renderIntakeSummary() {
               onclick="intakeGo(${INTAKE_ROOMS.length - 1})">
         <i class="fa-solid fa-arrow-left"></i> Back
       </button>
+    </div>
     </div>`;
 }
 
