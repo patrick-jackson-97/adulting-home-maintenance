@@ -1475,18 +1475,26 @@ body {
 }
 .intake-other-cat-select:focus { outline: none; border-color: var(--primary); }
 
-/* Desktop centering */
+/* Desktop — full page feel, not a modal */
 @media (min-width: 640px) {
   #intake-overlay {
     justify-content: center;
     align-items: flex-start;
-    background: rgba(0,0,0,0.45) !important;
+    background: var(--bg) !important;
   }
   #intake-inner {
-    max-width: 600px;
+    max-width: 660px;
     width: 100%;
     min-height: 100vh;
-    box-shadow: 0 0 40px rgba(0,0,0,0.2);
+    background: var(--bg);
+  }
+  /* On desktop the topbar doesn't need to span edge-to-edge like mobile */
+  .intake-topbar {
+    border-radius: 0;
+  }
+  /* Cards look nicer with a little more breathing room */
+  .intake-item-card {
+    border-radius: 12px;
   }
 }
 
