@@ -1435,6 +1435,61 @@ body {
 .intake-sub-chip:hover { border-color: var(--primary); color: var(--primary); }
 .intake-sub-active { background: var(--primary-light) !important; border-color: var(--primary) !important; color: var(--primary-dark) !important; font-weight: 500; }
 
+/* Sub-question Other text input */
+.intake-sub-other-input {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--primary);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--white);
+}
+.intake-sub-other-input:focus { outline: none; border-color: var(--primary-dark); }
+
+/* Other item inputs */
+.intake-item-other { border-style: dashed; }
+.intake-other-name-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--white);
+}
+.intake-other-name-input:focus { outline: none; border-color: var(--primary); }
+.intake-other-cat-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--white);
+  cursor: pointer;
+}
+.intake-other-cat-select:focus { outline: none; border-color: var(--primary); }
+
+/* Desktop centering */
+@media (min-width: 640px) {
+  #intake-overlay {
+    justify-content: center;
+    align-items: flex-start;
+    background: rgba(0,0,0,0.45) !important;
+  }
+  #intake-inner {
+    max-width: 600px;
+    width: 100%;
+    min-height: 100vh;
+    box-shadow: 0 0 40px rgba(0,0,0,0.2);
+  }
+}
+
 /* Nav */
 .intake-nav-row {
   display: flex;

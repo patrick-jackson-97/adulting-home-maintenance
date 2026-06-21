@@ -1,5 +1,5 @@
 // ==============================================
-// HOME SETUP WIZARD — intake.js v1
+// HOME SETUP WIZARD — intake.js v2
 // ==============================================
 
 // ── ICON MAP ──────────────────────────────────
@@ -8,6 +8,7 @@ const INTAKE_ICON_MAP = {
   furnace:         'fa-fire',
   boiler:          'fa-fire',
   minisplit:       'fa-wind',
+  rtu:             'fa-building',
   'water-heater':  'fa-droplet',
   tankless:        'fa-bolt',
   softener:        'fa-filter',
@@ -38,7 +39,18 @@ const INTAKE_ICON_MAP = {
   'house-fan':     'fa-fan',
   vent:            'fa-fan',
   solar:           'fa-sun',
+  other:           'fa-plus-circle',
 };
+
+const INTAKE_CAT_OPTIONS = [
+  { value: 'hvac',      label: 'Heating & Cooling' },
+  { value: 'water',     label: 'Water & Plumbing' },
+  { value: 'electrical',label: 'Electrical' },
+  { value: 'appliance', label: 'Appliance' },
+  { value: 'plumbing',  label: 'Plumbing' },
+  { value: 'roof',      label: 'Roof / Exterior' },
+  { value: 'other',     label: 'Other' },
+];
 
 // ── ROOM / ITEM DATA ──────────────────────────
 const INTAKE_ROOMS = [
@@ -103,6 +115,18 @@ const INTAKE_ROOMS = [
         sub: null,
         excludes: [],
       },
+      {
+        id: 'rtu',
+        name: 'Rooftop Unit (RTU)',
+        category: 'hvac',
+        svgKey: 'rtu',
+        location: 'On the roof — common in townhouses and condos',
+        tip: 'A large self-contained metal cabinet (3–5 ft wide) sitting directly on the roof. Contains both heating and cooling in one unit. Ductwork and refrigerant lines connect through a roof penetration below. Brands: Carrier, Trane, Lennox. Common in townhouses, condos, and light commercial buildings.',
+        labelTip: 'On the end or side panel of the roof cabinet — may need roof access. Serial number first digits typically encode the manufacture year.',
+        sub: { q: 'Type?', opts: ['Heat & cool (combo)', 'Cooling only', 'Not sure'] },
+        excludes: [],
+      },
+      { id: 'other-hvac', isOther: true, name: 'Other HVAC equipment', category: 'hvac' },
     ],
   },
 
@@ -200,6 +224,7 @@ const INTAKE_ROOMS = [
         sub: null,
         excludes: [],
       },
+      { id: 'other-water', isOther: true, name: 'Other water / plumbing equipment', category: 'water' },
     ],
   },
 
@@ -264,6 +289,7 @@ const INTAKE_ROOMS = [
         sub: null,
         excludes: [],
       },
+      { id: 'other-garage', isOther: true, name: 'Other garage equipment', category: 'electrical' },
     ],
   },
 
@@ -350,6 +376,7 @@ const INTAKE_ROOMS = [
         sub: { q: 'Type?', opts: ['Gas', 'Electric', 'Not sure'] },
         excludes: [],
       },
+      { id: 'other-kitchen', isOther: true, name: 'Other kitchen / laundry equipment', category: 'appliance' },
     ],
   },
 
@@ -414,6 +441,7 @@ const INTAKE_ROOMS = [
         sub: null,
         excludes: [],
       },
+      { id: 'other-exterior', isOther: true, name: 'Other exterior / roof item', category: 'roof' },
     ],
   },
 
@@ -456,6 +484,7 @@ const INTAKE_ROOMS = [
         sub: null,
         excludes: [],
       },
+      { id: 'other-bathrooms', isOther: true, name: 'Other bathroom equipment', category: 'plumbing' },
     ],
   },
 
@@ -509,13 +538,14 @@ const INTAKE_ROOMS = [
         sub: null,
         excludes: [],
       },
+      { id: 'other-attic', isOther: true, name: 'Other attic / crawl space item', category: 'other' },
     ],
   },
 ];
 
 // ── STATE ─────────────────────────────────────
 let intakeStep = -1;        // -1 = welcome, 0..N = room, N+1 = summary
-let intakeAnswers = {};     // { itemId: { status, year, sub } }
+let intakeAnswers = {};     // { itemId: { status, year, sub, subOther, customName, customCategory } }
 
 // ── HELPERS ───────────────────────────────────
 function intakeFindItem(id) {
@@ -538,15 +568,16 @@ function intakeExcluded() {
 }
 
 function intakeBuildAssetName(item, ans) {
+  if (item.isOther) return (ans?.customName || '').trim() || 'Other Equipment';
   let name = item.name;
   const sub = ans?.sub;
-  if (!sub) return name;
-  if ((item.id === 'tank-wh' || item.id === 'tankless-wh') && sub !== 'Not sure') {
+  if (!sub || sub === 'Not sure' || sub === 'Other') return name;
+  if (item.id === 'tank-wh' || item.id === 'tankless-wh') {
     if (sub === 'Heat pump (hybrid)') return 'Heat Pump Water Heater';
     return sub + ' ' + item.name;
   }
   if (item.id === 'range-electric' && sub === 'Induction') return 'Induction Cooktop / Range';
-  if (item.id === 'dryer' && sub !== 'Not sure') return sub + ' Dryer';
+  if (item.id === 'dryer') return sub + ' Dryer';
   if (item.id === 'garage-door') return sub.includes('Double') ? 'Double Garage Door' : 'Single Garage Door';
   return name;
 }
@@ -554,8 +585,9 @@ function intakeBuildAssetName(item, ans) {
 function intakeEstimateTasks(confirmed) {
   const counted = new Set();
   let total = 0;
-  confirmed.forEach(({ item }) => {
-    defaultTasks.filter(t => t.category === item.category).forEach(t => {
+  confirmed.forEach(({ item, ans }) => {
+    const cat = item.isOther ? (ans?.customCategory || 'other') : item.category;
+    defaultTasks.filter(t => t.category === cat).forEach(t => {
       if (!counted.has(t.name)) { counted.add(t.name); total++; }
     });
   });
@@ -665,10 +697,10 @@ function renderIntakeRoom(room) {
 
 function renderIntakeItem(item, excluded) {
   const ans = intakeAnswers[item.id] || {};
-  const isExcluded = excluded.has(item.id);
-  const icon = INTAKE_ICON_MAP[item.svgKey] || 'fa-wrench';
+  const isExcluded = !item.isOther && excluded.has(item.id);
 
   if (isExcluded) {
+    const icon = INTAKE_ICON_MAP[item.svgKey] || 'fa-wrench';
     return `
       <div class="intake-item-card intake-item-excluded">
         <div class="intake-item-top">
@@ -681,8 +713,11 @@ function renderIntakeItem(item, excluded) {
       </div>`;
   }
 
-  const yesActive   = ans.status === 'yes'    ? 'intake-yn-yes-active'    : '';
-  const noActive    = ans.status === 'no'     ? 'intake-yn-no-active'     : '';
+  if (item.isOther) return renderIntakeOtherItem(item, ans);
+
+  const icon = INTAKE_ICON_MAP[item.svgKey] || 'fa-wrench';
+  const yesActive    = ans.status === 'yes'    ? 'intake-yn-yes-active'    : '';
+  const noActive     = ans.status === 'no'     ? 'intake-yn-no-active'     : '';
   const unsureActive = ans.status === 'unsure' ? 'intake-yn-unsure-active' : '';
 
   return `
@@ -715,7 +750,86 @@ function renderIntakeItem(item, excluded) {
     </div>`;
 }
 
+function renderIntakeOtherItem(item, ans) {
+  const yesActive    = ans.status === 'yes'    ? 'intake-yn-yes-active'    : '';
+  const noActive     = ans.status === 'no'     ? 'intake-yn-no-active'     : '';
+
+  const catOptions = INTAKE_CAT_OPTIONS.map(opt =>
+    `<option value="${opt.value}" ${(ans.customCategory || item.category) === opt.value ? 'selected' : ''}>${opt.label}</option>`
+  ).join('');
+
+  return `
+    <div class="intake-item-card intake-item-other" id="icard-${item.id}">
+      <div class="intake-item-top">
+        <div class="intake-item-icon" style="background:var(--bg)"><i class="fa-solid fa-plus" style="color:var(--text-secondary)"></i></div>
+        <div class="intake-item-info">
+          <div class="intake-item-name" style="color:var(--text-secondary)">Something else?</div>
+          <div class="intake-item-location">Add equipment not on the list above</div>
+        </div>
+      </div>
+      <div class="intake-yn-row" style="margin-top:10px">
+        <button class="intake-yn-btn ${yesActive}" onclick="intakeSetAnswer('${item.id}','yes')">
+          <i class="fa-solid fa-check"></i> Yes, I have something else
+        </button>
+        <button class="intake-yn-btn ${noActive}" onclick="intakeSetAnswer('${item.id}','no')">
+          <i class="fa-solid fa-xmark"></i> No
+        </button>
+      </div>
+      ${ans.status === 'yes' ? `
+        <div class="intake-expansion">
+          <div class="intake-exp-row">
+            <label class="intake-exp-label">Equipment name <span style="color:var(--red);font-size:11px">required</span></label>
+            <input class="intake-other-name-input" type="text"
+                   placeholder="e.g. Heat Recovery Ventilator"
+                   value="${(ans.customName || '').replace(/"/g, '&quot;')}"
+                   oninput="intakeSetOtherName('${item.id}', this.value)">
+          </div>
+          <div class="intake-exp-row">
+            <label class="intake-exp-label">Category</label>
+            <select class="intake-other-cat-select"
+                    onchange="intakeSetOtherCat('${item.id}', this.value)">
+              ${catOptions}
+            </select>
+          </div>
+          <div class="intake-exp-row">
+            <label class="intake-exp-label">Install year <span class="intake-optional">(optional)</span></label>
+            <input class="intake-year-input" type="number" placeholder="${new Date().getFullYear() - 5}"
+                   min="1950" max="${new Date().getFullYear()}" value="${ans.year || ''}"
+                   oninput="intakeSetYear('${item.id}', this.value)">
+          </div>
+        </div>` : ''}
+    </div>`;
+}
+
 function renderIntakeExpansion(item, ans) {
+  // Build sub-question chips (with 'Other' appended)
+  let subHtml = '';
+  if (item.sub) {
+    const allOpts = [...item.sub.opts, 'Other'];
+    const chips = allOpts.map(opt => {
+      const isActive = ans.sub === opt ? 'intake-sub-active' : '';
+      // Escape single quotes in opt for the data attribute
+      const safeOpt = opt.replace(/'/g, '&#39;');
+      return `<button class="intake-sub-chip ${isActive}"
+                      onclick="intakeSetSub(this)"
+                      data-item="${item.id}"
+                      data-opt="${safeOpt}">${opt}</button>`;
+    }).join('');
+
+    const otherInput = ans.sub === 'Other' ? `
+      <input class="intake-sub-other-input" type="text"
+             placeholder="Describe..."
+             value="${(ans.subOther || '').replace(/"/g, '&quot;')}"
+             oninput="intakeSetSubOther('${item.id}', this.value)">` : '';
+
+    subHtml = `
+      <div class="intake-exp-row">
+        <label class="intake-exp-label">${item.sub.q}</label>
+        <div class="intake-sub-chips">${chips}</div>
+        ${otherInput}
+      </div>`;
+  }
+
   return `
     <div class="intake-expansion">
       <div class="intake-exp-row">
@@ -724,17 +838,7 @@ function renderIntakeExpansion(item, ans) {
                min="1950" max="${new Date().getFullYear()}" value="${ans.year || ''}"
                oninput="intakeSetYear('${item.id}', this.value)">
       </div>
-      ${item.sub ? `
-        <div class="intake-exp-row">
-          <label class="intake-exp-label">${item.sub.q}</label>
-          <div class="intake-sub-chips">
-            ${item.sub.opts.map(opt => `
-              <button class="intake-sub-chip ${ans.sub === opt ? 'intake-sub-active' : ''}"
-                      onclick="intakeSetSub('${item.id}', ${JSON.stringify(opt)})">
-                ${opt}
-              </button>`).join('')}
-          </div>
-        </div>` : ''}
+      ${subHtml}
     </div>`;
 }
 
@@ -744,8 +848,12 @@ function renderIntakeSummary() {
   INTAKE_ROOMS.forEach(room => {
     room.items.forEach(item => {
       const ans = intakeAnswers[item.id];
-      if (ans?.status === 'yes')    confirmed.push({ item, ans, room });
-      if (ans?.status === 'unsure') unsure.push({ item, room });
+      if (ans?.status === 'yes') {
+        // Skip "Other" items with no name entered
+        if (item.isOther && !(ans.customName || '').trim()) return;
+        confirmed.push({ item, ans, room });
+      }
+      if (ans?.status === 'unsure' && !item.isOther) unsure.push({ item, room });
     });
   });
 
@@ -767,8 +875,9 @@ function renderIntakeSummary() {
         <div class="intake-section-label">Adding to your home</div>
         ${confirmed.map(({ item, ans }) => {
           const name = intakeBuildAssetName(item, ans);
-          const icon = INTAKE_ICON_MAP[item.svgKey] || 'fa-wrench';
+          const icon = item.isOther ? 'fa-plus-circle' : (INTAKE_ICON_MAP[item.svgKey] || 'fa-wrench');
           const roomIdx = INTAKE_ROOMS.findIndex(r => r.items.some(i => i.id === item.id));
+          const subDisplay = ans.sub === 'Other' ? (ans.subOther || 'Other') : ans.sub;
           return `
             <div class="intake-summary-row">
               <div class="intake-summary-icon"><i class="fa-solid ${icon}"></i></div>
@@ -776,7 +885,7 @@ function renderIntakeSummary() {
                 <div class="intake-summary-name">${name}</div>
                 <div class="intake-summary-meta">
                   ${ans.year ? `Installed ${ans.year}` : 'Year unknown'}
-                  ${ans.sub ? ` · ${ans.sub}` : ''}
+                  ${subDisplay && subDisplay !== 'Not sure' ? ` · ${subDisplay}` : ''}
                 </div>
               </div>
               <button class="intake-edit-btn" onclick="intakeGo(${roomIdx})" title="Edit">
@@ -820,7 +929,6 @@ function intakeToggleTip(itemId) {
 
 function intakeSetAnswer(itemId, status) {
   if (!intakeAnswers[itemId]) intakeAnswers[itemId] = {};
-  // Toggle off if same button
   if (intakeAnswers[itemId].status === status) {
     delete intakeAnswers[itemId];
   } else {
@@ -834,10 +942,29 @@ function intakeSetYear(itemId, year) {
   intakeAnswers[itemId].year = year || null;
 }
 
-function intakeSetSub(itemId, opt) {
+// FIX: use data-* attributes so JSON string quotes don't break HTML
+function intakeSetSub(btn) {
+  const itemId = btn.dataset.item;
+  const opt    = btn.dataset.opt;
   if (!intakeAnswers[itemId]) intakeAnswers[itemId] = {};
   intakeAnswers[itemId].sub = opt;
+  if (opt !== 'Other') intakeAnswers[itemId].subOther = null;
   renderIntake();
+}
+
+function intakeSetSubOther(itemId, val) {
+  if (!intakeAnswers[itemId]) intakeAnswers[itemId] = {};
+  intakeAnswers[itemId].subOther = val || null;
+}
+
+function intakeSetOtherName(itemId, val) {
+  if (!intakeAnswers[itemId]) intakeAnswers[itemId] = {};
+  intakeAnswers[itemId].customName = val || null;
+}
+
+function intakeSetOtherCat(itemId, val) {
+  if (!intakeAnswers[itemId]) intakeAnswers[itemId] = {};
+  intakeAnswers[itemId].customCategory = val || null;
 }
 
 // ── FINISH — CREATE ASSETS ────────────────────
@@ -850,37 +977,50 @@ async function finishIntake() {
   INTAKE_ROOMS.forEach(room => {
     room.items.forEach(item => {
       const ans = intakeAnswers[item.id];
-      if (ans?.status === 'yes') confirmed.push({ item, ans });
+      if (ans?.status === 'yes') {
+        if (item.isOther && !(ans.customName || '').trim()) return;
+        confirmed.push({ item, ans });
+      }
     });
   });
 
   for (const { item, ans } of confirmed) {
     const name        = intakeBuildAssetName(item, ans);
     const installYear = ans.year ? parseInt(ans.year) : null;
+    const category    = item.isOther ? (ans.customCategory || 'other') : item.category;
+
+    // Build notes from sub-question answer
+    let notes = null;
+    if (!item.isOther && ans.sub && ans.sub !== 'Not sure') {
+      if (ans.sub === 'Other') {
+        notes = ans.subOther ? `Type: ${ans.subOther}` : null;
+      } else {
+        notes = `Type: ${ans.sub}`;
+      }
+    }
 
     const { data: asset, error } = await sb.from('assets').insert({
       user_id:       currentUser.id,
       name,
-      category:      item.category,
+      category,
       install_year:  installYear,
       install_month: null,
       brand:         null,
       model:         null,
-      notes:         ans.sub && ans.sub !== 'Not sure' ? `Type: ${ans.sub}` : null,
+      notes,
     }).select().single();
 
     if (error || !asset) continue;
 
-    const tasks = defaultTasks.filter(t => t.category === item.category);
+    // FIX: match actual maintenance_tasks schema — no category, no is_active
+    const tasks = defaultTasks.filter(t => t.category === category);
     if (tasks.length > 0) {
       const taskRows = tasks.map(t => ({
-        asset_id:         asset.id,
-        user_id:          currentUser.id,
-        name:             t.name,
-        category:         t.category,
-        interval_days:    t.interval_days,
-        next_due_at:      computeNextDue(installYear, null, t.interval_days),
-        is_active:        true,
+        asset_id:      asset.id,
+        user_id:       currentUser.id,
+        name:          t.name,
+        interval_days: t.interval_days,
+        next_due_at:   computeNextDue(installYear, null, t.interval_days),
       }));
       await sb.from('maintenance_tasks').insert(taskRows);
     }
@@ -888,7 +1028,6 @@ async function finishIntake() {
 
   hideIntake();
   await refreshAll();
-  // Navigate to assets page
   const assetsBtn = document.querySelector('.nav-item:nth-child(2)');
   if (assetsBtn) showPage('assets', assetsBtn);
 }
