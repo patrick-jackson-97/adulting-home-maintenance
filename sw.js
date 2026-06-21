@@ -1,10 +1,6 @@
 // Service Worker — Adulting Home Maintenance
-const CACHE = 'adulting-hm-v1';
-const ASSETS = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js',
+const CACHE = 'adulting-hm-v2';
+const STATIC = [
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -14,7 +10,7 @@ const ASSETS = [
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(cache => cache.addAll(STATIC)).then(() => self.skipWaiting())
   );
 });
 
@@ -27,14 +23,31 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Network-first for Supabase API calls so data is always fresh
-  if (e.request.url.includes('supabase.co')) {
+  const url = e.request.url;
+
+  // Network-first for Supabase API calls and all app files (HTML/JS/CSS)
+  // so updates always land immediately
+  if (
+    url.includes('supabase.co') ||
+    url.includes('/index.html') ||
+    url.includes('/app.js') ||
+    url.includes('/style.css') ||
+    url === self.registration.scope ||
+    url === self.registration.scope + '/'
+  ) {
     e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request))
+      fetch(e.request)
+        .then(res => {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
     );
     return;
   }
-  // Cache-first for everything else
+
+  // Cache-first for icons, fonts, and other static assets
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
