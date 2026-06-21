@@ -585,8 +585,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
-  padding: 8px 2px;
+  padding: 8px 0;
   background: none;
   border: none;
   font-size: 9px;
@@ -594,10 +595,12 @@ body {
   cursor: pointer;
   font-family: inherit;
   transition: color 0.15s;
-  white-space: nowrap;
+  width: 100%;
+  text-align: center;
 }
 
-.nav-item i { font-size: 18px; }
+.nav-item i { font-size: 16px; }
+.nav-item span { display: block; line-height: 1; }
 .nav-item.active { color: var(--primary-dark); }
 
 /* ── DRAWERS ── */
