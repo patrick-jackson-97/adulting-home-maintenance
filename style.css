@@ -337,7 +337,7 @@ body {
 .main-content {
   max-width: 680px;
   margin: 0 auto;
-  padding: 16px 16px 80px;
+  padding: 16px 16px 90px;
 }
 
 .page { display: none; }
@@ -577,7 +577,7 @@ body {
   background: var(--white);
   border-top: 1px solid var(--border);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   z-index: 100;
 }
 
@@ -585,18 +585,19 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 10px 4px;
+  gap: 2px;
+  padding: 8px 2px;
   background: none;
   border: none;
-  font-size: 10px;
+  font-size: 9px;
   color: var(--text-secondary);
   cursor: pointer;
   font-family: inherit;
   transition: color 0.15s;
+  white-space: nowrap;
 }
 
-.nav-item i { font-size: 20px; }
+.nav-item i { font-size: 18px; }
 .nav-item.active { color: var(--primary-dark); }
 
 /* ── DRAWERS ── */
