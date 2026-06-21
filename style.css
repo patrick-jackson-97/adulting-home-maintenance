@@ -1478,21 +1478,31 @@ body {
 /* Desktop — full page feel, not a modal */
 @media (min-width: 640px) {
   #intake-overlay {
-    justify-content: center;
-    align-items: flex-start;
+    display: block !important;
     background: var(--bg) !important;
   }
   #intake-inner {
-    max-width: 660px;
     width: 100%;
     min-height: 100vh;
     background: var(--bg);
   }
-  /* On desktop the topbar doesn't need to span edge-to-edge like mobile */
+  /* Topbar spans the full viewport width */
   .intake-topbar {
     border-radius: 0;
+    /* width already 100% since intake-inner is full width */
   }
-  /* Cards look nicer with a little more breathing room */
+  /* Content sections are centered */
+  .intake-body,
+  .intake-room-header,
+  .intake-welcome-hero {
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .intake-room-header {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
   .intake-item-card {
     border-radius: 12px;
   }
