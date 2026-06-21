@@ -251,7 +251,15 @@ body {
 
 /* ── TOP BAR ── */
 .topbar {
-  background: var(--primary-dark);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255,255,255,0.03) 0px,
+      rgba(255,255,255,0.03) 1px,
+      transparent 1px,
+      transparent 8px
+    ),
+    var(--primary-dark);
   color: white;
   position: sticky;
   top: 0;
@@ -270,9 +278,18 @@ body {
 .topbar-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.topbar-brand i {
+  font-size: 20px;
+  opacity: 0.9;
+}
+
+.topbar-brand span {
+  font-size: 18px;
   font-weight: 700;
-  font-size: 16px;
+  letter-spacing: -0.3px;
 }
 
 .topbar-right {
