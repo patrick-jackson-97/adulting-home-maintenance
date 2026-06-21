@@ -1044,8 +1044,11 @@ async function finishIntake() {
 
     if (error || !asset) continue;
 
-    // FIX: match actual maintenance_tasks schema — no category, no is_active
-    const tasks = defaultTasks.filter(t => t.category === category);
+    // Match tasks by specific asset_type (item.id), fall back to broad category
+    const itemId = item.isOther ? null : item.id;
+    const tasks = itemId
+      ? defaultTasks.filter(t => t.asset_type === itemId)
+      : defaultTasks.filter(t => t.category === category && !t.asset_type);
     if (tasks.length > 0) {
       const taskRows = tasks.map(t => ({
         asset_id:      asset.id,

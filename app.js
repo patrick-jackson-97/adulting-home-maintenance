@@ -341,9 +341,58 @@ async function showApp() {
 // ==============================================
 async function loadDefaultTasks() {
   const { data } = await sb.from('default_tasks')
-    .select('id, category, name, interval_days, description, tips_parts, tips_tools, tips_how');
+    .select('id, category, asset_type, name, interval_days, description, tips_parts, tips_tools, tips_how');
   defaultTasks = data || [];
 }
+
+// Maps equipment library names to the asset_type IDs used in default_tasks
+const EQUIP_NAME_TO_ASSET_TYPE = {
+  'Central Air Conditioner':           'central-ac',
+  'Heat Pump (Outdoor Unit)':          'central-ac',
+  'Air Handler / Fan Coil':            'central-ac',
+  'Gas Furnace':                       'gas-furnace',
+  'Electric Furnace':                  'electric-furnace',
+  'Boiler (Hot Water)':                'boiler',
+  'Boiler (Steam)':                    'boiler',
+  'Mini-Split Outdoor Unit':           'mini-split',
+  'Mini-Split Indoor Head Unit':       'mini-split',
+  'Ductless Ceiling Cassette':         'mini-split',
+  'Whole-House Fan':                   'whole-house-fan',
+  'Attic Ventilator Fan':              'attic-vent',
+  'Gas Water Heater (Tank)':           'tank-wh',
+  'Electric Water Heater (Tank)':      'tank-wh',
+  'Heat Pump Water Heater':            'tank-wh',
+  'Tankless Water Heater (Gas)':       'tankless-wh',
+  'Tankless Water Heater (Electric)':  'tankless-wh',
+  'Water Softener':                    'water-softener',
+  'Whole-House Water Filter':          'whole-house-filter',
+  'Sump Pump':                         'sump-pump',
+  'Battery Backup Sump Pump':          'sump-pump',
+  'Irrigation / Sprinkler System':     'irrigation',
+  'Backflow Preventer':                'irrigation',
+  'Well Pump (Submersible)':           'well-system',
+  'Well Pressure Tank':                'well-system',
+  'Standby Generator':                 'standby-gen',
+  'Portable Generator':                'portable-gen',
+  'Solar Panel System':                'solar-panels',
+  'Solar Inverter':                    'solar-panels',
+  'EV Charger (Level 2)':              'ev-charger',
+  'Electric Vehicle Charging (EVSE)':  'ev-charger',
+  'Bathroom Exhaust Fan':              'exhaust-fans',
+  'Refrigerator':                      'refrigerator',
+  'Refrigerator (Second / Garage)':    'refrigerator',
+  'Dishwasher':                        'dishwasher',
+  'Gas Range / Oven':                  'range-gas',
+  'Electric Range / Oven':             'range-electric',
+  'Garbage Disposal':                  'disposal',
+  'Washing Machine (Front-Load)':      'washer',
+  'Washing Machine (Top-Load)':        'washer',
+  'Gas Dryer':                         'dryer',
+  'Electric Dryer':                    'dryer',
+  'Toilet (Standard)':                 'toilets',
+  'Toilet (Low-Flow / High-Efficiency)':'toilets',
+  'Shower Valve / Cartridge':          'shower-valve',
+};
 
 async function refreshAll() {
   await Promise.all([loadAssets(), loadLog()]);
@@ -747,7 +796,7 @@ function showAddAsset() {
   document.getElementById('asset-install-year').value  = '';
   document.getElementById('asset-install-month').value = '';
   renderEquipmentList('hvac');
-  renderSuggestedTasks('hvac');
+  renderSuggestedTasks('hvac', null);
   openDrawer('asset-drawer');
 }
 
@@ -787,12 +836,13 @@ function renderEquipmentList(cat) {
   if (!list) return;
   tip.style.display = 'none';
   tip.innerHTML = '';
-  list.innerHTML = items.map(item =>
-    `<button type="button" class="equip-item" onclick="selectEquipment(this, ${JSON.stringify(item.name)}, ${JSON.stringify(item.identify)})">${item.name}</button>`
-  ).join('');
+  list.innerHTML = items.map(item => {
+    const assetType = EQUIP_NAME_TO_ASSET_TYPE[item.name] || '';
+    return `<button type="button" class="equip-item" onclick="selectEquipment(this, ${JSON.stringify(item.name)}, ${JSON.stringify(item.identify)}, ${JSON.stringify(assetType)})">${item.name}</button>`;
+  }).join('');
 }
 
-function selectEquipment(btn, name, identifyText) {
+function selectEquipment(btn, name, identifyText, assetType) {
   // Toggle active state
   const wasActive = btn.classList.contains('active');
   document.querySelectorAll('#equip-list .equip-item').forEach(b => b.classList.remove('active'));
@@ -800,6 +850,7 @@ function selectEquipment(btn, name, identifyText) {
   if (wasActive) {
     tip.style.display = 'none';
     tip.innerHTML = '';
+    renderSuggestedTasks(selectedCat, null);
     return;
   }
   btn.classList.add('active');
@@ -811,6 +862,8 @@ function selectEquipment(btn, name, identifyText) {
   // Show identification tip
   tip.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> <strong>How to identify:</strong> ${identifyText}`;
   tip.style.display = 'block';
+  // Update suggested tasks for this specific equipment type
+  renderSuggestedTasks(selectedCat, assetType || null);
 }
 
 function selectCategory(btn) {
@@ -818,11 +871,13 @@ function selectCategory(btn) {
   btn.classList.add('active');
   selectedCat = btn.dataset.cat;
   renderEquipmentList(selectedCat);
-  renderSuggestedTasks(selectedCat);
+  renderSuggestedTasks(selectedCat, null);
 }
 
-function renderSuggestedTasks(cat) {
-  const tasks = defaultTasks.filter(t => t.category === cat);
+function renderSuggestedTasks(cat, assetType) {
+  const tasks = assetType
+    ? defaultTasks.filter(t => t.asset_type === assetType)
+    : defaultTasks.filter(t => t.category === cat && !t.asset_type);
   document.getElementById('suggested-tasks').innerHTML = tasks.map(t => `
     <label class="task-check-item">
       <input type="checkbox" checked data-task-id="${t.id}" data-name="${t.name}" data-interval="${t.interval_days}">
