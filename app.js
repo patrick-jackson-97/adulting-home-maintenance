@@ -332,6 +332,8 @@ async function showApp() {
 
   await loadDefaultTasks();
   await refreshAll();
+  // Show setup wizard automatically for new users with no assets
+  if (allAssets.length === 0) showIntake();
 }
 
 // ==============================================

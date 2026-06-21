@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="Home Maintenance">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="style.css?v=8">
+  <link rel="stylesheet" href="style.css?v=9">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -106,9 +106,12 @@
       <div id="page-assets" class="page">
         <div class="page-header">
           <h1>My assets</h1>
-          <button class="primary-btn small" onclick="showAddAsset()"><i class="fa-solid fa-plus"></i> Add</button>
+          <div style="display:flex;gap:6px">
+            <button class="secondary-btn small" onclick="showIntake()" title="Setup wizard"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+            <button class="primary-btn small" onclick="showAddAsset()"><i class="fa-solid fa-plus"></i> Add</button>
+          </div>
         </div>
-        <div id="asset-list"><div class="empty-state"><i class="fa-solid fa-wrench"></i><p>No assets yet. Add your first one!</p></div></div>
+        <div id="asset-list"><div class="empty-state"><i class="fa-solid fa-wrench"></i><p>No assets yet.</p><button class="primary-btn" onclick="showIntake()" style="margin-top:12px"><i class="fa-solid fa-wand-magic-sparkles"></i> Run setup wizard</button></div></div>
       </div>
 
       <!-- TASKS -->
@@ -354,8 +357,14 @@
 
   <div id="drawer-overlay" class="drawer-overlay" style="display:none" onclick="closeAllDrawers()"></div>
 
+  <!-- INTAKE WIZARD OVERLAY -->
+  <div id="intake-overlay" style="display:none; position:fixed; inset:0; z-index:300; overflow-y:auto; background:var(--bg)">
+    <div id="intake-inner"></div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
+  <script src="intake.js?v=1"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
