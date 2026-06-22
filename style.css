@@ -1182,6 +1182,11 @@ body {
   color: #fff;
 }
 
+.intake-welcome-hero-inner {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
 .intake-welcome-icon-wrap {
   width: 64px;
   height: 64px;
@@ -1207,6 +1212,15 @@ body {
   line-height: 1.55;
   max-width: 320px;
   margin: 0 auto;
+}
+
+/* Welcome body (below hero) */
+.intake-welcome-body {
+  padding: 24px 20px 48px;
+  max-width: 560px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .intake-room-header {
@@ -1555,7 +1569,14 @@ body {
   }
   .intake-topbar { border-radius: 0; }
 
-  /* Welcome + summary: centered at comfortable reading width */
+  /* Welcome screen: hero is full-width, body is centered */
+  .intake-welcome-hero { padding: 56px 40px 48px; }
+  .intake-welcome-hero-inner { max-width: 640px; }
+  .intake-welcome-hero h1 { font-size: 30px; }
+  .intake-welcome-hero p { font-size: 16px; max-width: 440px; }
+  .intake-welcome-body { max-width: 640px; padding: 36px 40px 64px; }
+
+  /* Summary: centered at comfortable reading width */
   .intake-centered-page {
     max-width: 700px;
     margin: 0 auto;

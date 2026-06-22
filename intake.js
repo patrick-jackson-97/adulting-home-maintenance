@@ -644,29 +644,29 @@ function renderIntakeWelcome() {
       <div class="intake-topbar-title">Home setup</div>
       <button class="icon-btn" onclick="hideIntake()" style="color:rgba(255,255,255,.7)" title="Close"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <div class="intake-centered-page">
-      <div class="intake-welcome-hero">
+    <div class="intake-welcome-hero">
+      <div class="intake-welcome-hero-inner">
         <div class="intake-welcome-icon-wrap"><i class="fa-solid fa-house-chimney"></i></div>
         <h1>Let's find out what you've got</h1>
         <p>Walk through your home with us — takes about 5 minutes. You don't need any model numbers yet.</p>
       </div>
-      <div class="intake-body">
-        <div class="intake-callout">
-          <i class="fa-solid fa-circle-info"></i>
-          <span>Don't worry if you're unsure about something — identification tips are included for each item, and you can always add more later.</span>
-        </div>
-        <div class="intake-section-label">What we'll cover</div>
-        <div class="intake-room-grid">
-          ${INTAKE_ROOMS.map(r => `
-            <div class="intake-room-chip">
-              <i class="fa-solid ${r.icon}"></i>
-              <span>${r.name}</span>
-            </div>`).join('')}
-        </div>
-        <button class="intake-primary-btn" onclick="intakeGo(0)">
-          Start the walkthrough <i class="fa-solid fa-arrow-right"></i>
-        </button>
+    </div>
+    <div class="intake-welcome-body">
+      <div class="intake-callout">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>Don't worry if you're unsure about something — identification tips are included for each item, and you can always add more later.</span>
       </div>
+      <div class="intake-section-label">What we'll cover</div>
+      <div class="intake-room-grid">
+        ${INTAKE_ROOMS.map(r => `
+          <div class="intake-room-chip">
+            <i class="fa-solid ${r.icon}"></i>
+            <span>${r.name}</span>
+          </div>`).join('')}
+      </div>
+      <button class="intake-primary-btn" onclick="intakeGo(0)">
+        Start the walkthrough <i class="fa-solid fa-arrow-right"></i>
+      </button>
     </div>`;
 }
 
