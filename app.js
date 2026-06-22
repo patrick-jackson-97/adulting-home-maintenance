@@ -700,6 +700,8 @@ let deleteAllSeconds = 15;
 
 function promptDeleteAllAssets() {
   if (!allAssets.length) return;
+  const count = allAssets.length;
+  if (!confirm(`Delete all ${count} asset${count !== 1 ? 's' : ''} and their maintenance tasks? You'll have 15 seconds to cancel.`)) return;
   deleteAllSeconds = 15;
   clearInterval(deleteAllTimer);
 
