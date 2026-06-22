@@ -850,6 +850,53 @@ body {
 
 .danger-btn:hover { background: var(--red-light); }
 
+.danger-btn.small {
+  width: auto;
+  padding: 7px 12px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── DELETE ALL BANNER ── */
+.delete-all-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--red-light, #fff0f0);
+  border: 1px solid var(--red);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.delete-all-banner-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--red);
+  flex: 1;
+  min-width: 200px;
+}
+
+.delete-all-banner-msg i { font-size: 16px; flex-shrink: 0; }
+
+.delete-all-countdown {
+  font-variant-numeric: tabular-nums;
+  min-width: 26px;
+  display: inline-block;
+}
+
+.delete-all-banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 /* ── INITIAL TASK STATE ── */
 .task-item.initial { border-left: 3px solid #6366f1; }
 .task-due.initial { color: #6366f1; }

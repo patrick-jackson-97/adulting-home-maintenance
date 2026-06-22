@@ -588,11 +588,14 @@ const CATEGORY_ICONS = {
 };
 
 function renderAssets() {
-  const el = document.getElementById('asset-list');
+  const el       = document.getElementById('asset-list');
+  const deleteBtn = document.getElementById('delete-all-btn');
   if (!allAssets.length) {
+    if (deleteBtn) deleteBtn.style.display = 'none';
     el.innerHTML = '<div class="empty-state"><i class="fa-solid fa-wrench"></i><p>No assets yet. Add your first one!</p></div>';
     return;
   }
+  if (deleteBtn) deleteBtn.style.display = '';
 
   const grouped = {};
   allAssets.forEach(a => {
@@ -688,6 +691,66 @@ async function deleteAsset(id) {
   const { error } = await sb.from('assets').delete().eq('id', id);
   if (error) { alert('Error deleting asset: ' + error.message); return; }
   closeDrawer('asset-detail-drawer');
+  await refreshAll();
+}
+
+// ── DELETE ALL ASSETS ─────────────────────────────
+let deleteAllTimer   = null;
+let deleteAllSeconds = 15;
+
+function promptDeleteAllAssets() {
+  if (!allAssets.length) return;
+  deleteAllSeconds = 15;
+  clearInterval(deleteAllTimer);
+
+  const banner = document.getElementById('delete-all-banner');
+  banner.style.display = 'block';
+  renderDeleteAllBanner();
+
+  deleteAllTimer = setInterval(() => {
+    deleteAllSeconds--;
+    if (deleteAllSeconds <= 0) {
+      clearInterval(deleteAllTimer);
+      executeDeleteAllAssets();
+    } else {
+      renderDeleteAllBanner();
+    }
+  }, 1000);
+}
+
+function renderDeleteAllBanner() {
+  const count  = allAssets.length;
+  const banner = document.getElementById('delete-all-banner');
+  banner.innerHTML = `
+    <div class="delete-all-banner">
+      <div class="delete-all-banner-msg">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        Deleting <strong>${count} asset${count !== 1 ? 's' : ''}</strong> and all their tasks in
+        <strong class="delete-all-countdown">${deleteAllSeconds}s</strong>
+      </div>
+      <div class="delete-all-banner-actions">
+        <button class="danger-btn small" onclick="executeDeleteAllAssets()">Delete now</button>
+        <button class="secondary-btn small" onclick="cancelDeleteAllAssets()">Cancel</button>
+      </div>
+    </div>`;
+}
+
+function cancelDeleteAllAssets() {
+  clearInterval(deleteAllTimer);
+  const banner = document.getElementById('delete-all-banner');
+  banner.style.display = 'none';
+}
+
+async function executeDeleteAllAssets() {
+  clearInterval(deleteAllTimer);
+  document.getElementById('delete-all-banner').style.display = 'none';
+
+  const ids = allAssets.map(a => a.id);
+  for (const id of ids) {
+    await sb.from('maintenance_log').delete().eq('asset_id', id);
+    await sb.from('maintenance_tasks').delete().eq('asset_id', id);
+  }
+  await sb.from('assets').delete().eq('user_id', currentUser.id);
   await refreshAll();
 }
 
