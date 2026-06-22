@@ -1498,9 +1498,8 @@ body {
 }
 
 @media (min-width: 768px) {
-  /* Full-page overlay — not a modal */
-  #intake-overlay {
-    display: block !important;
+  /* Full-page overlay — not a modal; only override background when open (JS controls display) */
+  #intake-overlay.is-open {
     background: var(--bg) !important;
   }
   #intake-inner {

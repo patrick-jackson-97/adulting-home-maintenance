@@ -598,13 +598,17 @@ function intakeEstimateTasks(confirmed) {
 function showIntake() {
   intakeStep = -1;
   intakeAnswers = {};
-  document.getElementById('intake-overlay').style.display = 'flex';
+  const el = document.getElementById('intake-overlay');
+  el.style.display = 'flex';
+  el.classList.add('is-open');
   document.body.style.overflow = 'hidden';
   renderIntake();
 }
 
 function hideIntake() {
-  document.getElementById('intake-overlay').style.display = 'none';
+  const el = document.getElementById('intake-overlay');
+  el.style.display = 'none';
+  el.classList.remove('is-open');
   document.body.style.overflow = '';
 }
 
