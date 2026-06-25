@@ -190,6 +190,15 @@ function getRepairCost(logEntry) {
   return REPAIR_VALUE[cat] || 150;
 }
 
+// Returns the first sentence of a task's description from defaultTasks.
+function getTaskDescription(taskName) {
+  const task = defaultTasks.find(t => t.name === taskName);
+  if (!task?.description) return null;
+  // First sentence only — clean and concise for the savings view
+  const first = task.description.split(/\.\s+/)[0].replace(/\.$/, '');
+  return first.length > 180 ? first.slice(0, 177) + '…' : first;
+}
+
 // ==============================================
 // EQUIPMENT LIBRARY
 // ==============================================
@@ -1410,12 +1419,17 @@ function renderSavings() {
   el.innerHTML = Object.entries(byAsset)
     .sort((a, b) => b[1].avoided - a[1].avoided)
     .map(([assetName, v]) => {
-      const taskList = v.tasks.map(t =>
-        `<div class="savings-task-row">
-          <span class="savings-task-name">${t.name}</span>
-          <span class="savings-task-cost">~$${t.cost.toLocaleString()} prevented</span>
-        </div>`
-      ).join('');
+      const taskList = v.tasks.map(t => {
+        const desc = getTaskDescription(t.name);
+        return `
+          <div class="savings-task-item">
+            <div class="savings-task-row">
+              <span class="savings-task-name">${t.name}</span>
+              <span class="savings-task-cost">~$${t.cost.toLocaleString()} prevented</span>
+            </div>
+            ${desc ? `<div class="savings-task-desc">${desc}.</div>` : ''}
+          </div>`;
+      }).join('');
       return `
         <div class="savings-bar-item">
           <div class="savings-bar-label">

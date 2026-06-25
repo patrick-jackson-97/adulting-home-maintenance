@@ -795,32 +795,44 @@ body {
   transition: width 0.5s ease;
 }
 .savings-task-list {
-  margin-top: 8px;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 0;
+}
+.savings-task-item {
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.savings-task-item:first-child {
+  border-top: none;
+  padding-top: 4px;
 }
 .savings-task-row {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
-  font-size: 12px;
-  padding: 2px 0;
+  font-size: 13px;
 }
 .savings-task-name {
-  color: var(--text-secondary);
+  color: var(--text);
+  font-weight: 500;
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .savings-task-cost {
   color: var(--primary-dark);
-  font-weight: 500;
+  font-weight: 600;
   flex-shrink: 0;
   white-space: nowrap;
+  font-size: 12px;
+}
+.savings-task-desc {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 
 /* ── ASSET DETAIL ── */
