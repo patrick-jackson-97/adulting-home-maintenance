@@ -774,7 +774,7 @@ body {
 }
 
 /* ── SAVINGS BARS ── */
-.savings-bar-item { margin-bottom: 14px; }
+.savings-bar-item { margin-bottom: 20px; }
 .savings-bar-label {
   display: flex;
   justify-content: space-between;
@@ -793,6 +793,34 @@ body {
   background: var(--primary);
   border-radius: 4px;
   transition: width 0.5s ease;
+}
+.savings-task-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.savings-task-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  padding: 2px 0;
+}
+.savings-task-name {
+  color: var(--text-secondary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.savings-task-cost {
+  color: var(--primary-dark);
+  font-weight: 500;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* ── ASSET DETAIL ── */

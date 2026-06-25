@@ -26,10 +26,169 @@ let editingLogId    = null;   // null = new log entry, string = editing existing
 let taskFilters = { timeline: 'all', asset: '', category: '', sort: 'due_asc' };
 
 // Estimated repair cost avoided per task completion (rough averages)
+// Fallback repair value by broad category (used when task name isn't in TASK_REPAIR_COST)
 const REPAIR_VALUE = {
-  hvac: 180, water: 150, appliance: 120,
-  electrical: 100, plumbing: 130, roof: 200, other: 80
+  hvac: 300, water: 400, appliance: 200,
+  electrical: 250, plumbing: 250, roof: 600, other: 150
 };
+
+// Estimated cost of the repair each specific task prevents.
+// Source: national average repair/replacement costs (HomeAdvisor, Angi, 2024).
+const TASK_REPAIR_COST = {
+  // ── HVAC ──────────────────────────────────────────────────
+  'Replace HVAC air filter':                            200,  // blower motor burnout
+  'Clean outdoor condenser coils':                      900,  // compressor failure
+  'Clear A/C condensate drain line':                    500,  // water damage / mold
+  'Schedule annual HVAC tune-up':                       500,  // emergency breakdown
+  'Schedule annual furnace tune-up':                    500,
+  'Inspect furnace flue pipe':                          600,  // CO hazard / water damage
+  'Clean furnace blower assembly':                      400,  // motor burnout
+  'Inspect and clean heating elements':                 350,
+  'Schedule annual boiler service':                     700,
+  'Bleed radiators to remove trapped air':              150,
+  'Check boiler pressure gauge':                        200,
+  'Test boiler pressure relief valve':                  350,
+  'Clean mini-split air filters':                       150,
+  'Clean indoor evaporator coils':                      450,
+  'Clean outdoor compressor unit':                      350,
+  'Schedule annual mini-split service':                 450,
+  'Replace RTU air filter':                             300,
+  'Schedule annual RTU service':                        700,
+  'Clear RTU condensate drain':                         500,
+  'Lubricate whole-house fan motor bearings':           300,
+  'Clean fan louvers and blades':                       150,
+  'Test fan operation each spring':                     200,
+  // ── WATER HEATERS ─────────────────────────────────────────
+  'Flush water heater sediment':                        700,  // early tank failure
+  'Test pressure relief valve':                         250,  // safety / flooding
+  'Inspect anode rod':                                  900,  // tank corrosion / failure
+  'Inspect flue pipe and venting (gas)':                600,  // CO hazard
+  'Check for leaks and corrosion':                     1200,  // catches failing tank
+  'Descale tankless water heater':                      800,  // heat exchanger failure
+  'Clean inlet filter screens':                         200,
+  'Schedule annual tankless service':                   450,
+  // ── WATER TREATMENT / SUPPLY ──────────────────────────────
+  'Refill salt in brine tank':                          100,
+  'Check for salt bridges':                             150,
+  'Clean brine tank':                                   200,
+  'Replace whole-house filter cartridge':               250,
+  'Sanitize filter housing':                            150,
+  // ── SUMP / WELL / IRRIGATION ──────────────────────────────
+  'Test sump pump operation':                          5000,  // basement flooding avg $10k+
+  'Clean sump pit':                                     300,
+  'Test backup battery or backup pump':                5000,
+  'Inspect discharge line and check valve':             400,
+  'Test well water quality':                            500,
+  'Inspect well pressure tank':                         900,  // pump short-cycling / failure
+  'Check well cap and casing':                          400,
+  'Spring irrigation startup and zone test':            300,
+  'Fall irrigation winterization':                      600,  // freeze damage
+  'Inspect and adjust sprinkler heads':                 200,
+  'Test and certify backflow preventer':                300,
+  // ── ROOF & GUTTERS ────────────────────────────────────────
+  'Annual roof inspection':                            2000,  // water intrusion / rot
+  'Check roof flashing and sealants':                  1500,
+  'Inspect attic for water damage or leaks':           2500,
+  'Clean gutters':                                      800,  // foundation / basement damage
+  'Inspect gutter hangers and slope':                   400,
+  'Check downspout extensions and grading':             600,
+  // ── DECK ──────────────────────────────────────────────────
+  'Inspect deck boards and structural joists':         1500,
+  'Check railing stability and fasteners':              800,
+  'Clean deck surface':                                 300,
+  'Seal or stain wood deck':                           1200,  // rot / full deck replacement
+  'Inspect ledger board and flashing':                 2000,
+  // ── DRIVEWAY ──────────────────────────────────────────────
+  'Fill cracks in driveway':                            800,
+  'Seal asphalt driveway':                             1200,
+  'Pressure wash driveway surface':                     200,
+  // ── PLUMBING / TOILETS ────────────────────────────────────
+  'Inspect toilet tank components':                     200,
+  'Check for silent toilet leaks (dye test)':           250,  // wasted water
+  'Clean toilet tank interior':                         100,
+  'Inspect toilet supply line and shut-off valve':      600,  // flood prevention
+  'Check caulk around toilet base':                     350,  // subfloor rot
+  'Clean drain stopper and hair trap':                  150,
+  'Descale and clean showerhead':                       100,
+  'Inspect and re-caulk grout, tiles, and tub surround': 700, // wall water damage
+  'Check for loose or damaged tiles':                   900,
+  // ── ELECTRICAL / FANS ─────────────────────────────────────
+  'Clean bathroom exhaust fan grille and blades':       150,
+  'Test exhaust fan airflow':                           300,  // mold prevention
+  'Check exterior duct termination':                    400,
+  'Verify automatic weekly exercise run':               500,
+  'Schedule annual generator service':                  900,
+  'Check generator oil level':                          700,  // engine seizure
+  'Test transfer switch operation':                     400,
+  'Run generator under load (30 min)':                  350,
+  'Change generator oil':                               500,
+  'Replace spark plugs':                                250,
+  'Inspect charging cable for damage':                  350,
+  'Clean charging connector contacts':                  150,
+  'Test GFCI protection on charger circuit':            250,
+  // ── SOLAR ─────────────────────────────────────────────────
+  'Check inverter display and system alerts':           500,
+  'Clean solar panel surfaces':                         600,  // production loss
+  'Inspect panel mounting hardware':                    700,
+  'Schedule annual solar system inspection':            900,
+  // ── RADON / CRAWLSPACE ────────────────────────────────────
+  'Test radon levels':                                 1000,
+  'Inspect radon fan operation':                        600,
+  'Check manometer fluid level':                        400,
+  'Inspect vapor barrier for damage':                  1000,
+  'Empty crawlspace dehumidifier':                      400,
+  'Check for moisture and mold':                       2000,
+  // ── GARAGE ────────────────────────────────────────────────
+  'Lubricate garage door springs, rollers, and hinges': 250,
+  'Test auto-reverse safety feature':                   300,
+  'Inspect cables and springs for wear':                450,
+  'Check door balance':                                 300,
+  'Lubricate opener drive mechanism':                   200,
+  'Inspect and test safety sensors':                    250,
+  // ── ATTIC ─────────────────────────────────────────────────
+  'Check attic insulation depth':                       600,
+  'Inspect insulation for moisture or mold':           1500,
+  'Check for pest activity in insulation':              800,
+  'Inspect attic vents for blockages':                  400,
+  'Test and inspect power attic fan':                   350,
+  'Inspect vent screens for damage':                    400,
+  // ── APPLIANCES ────────────────────────────────────────────
+  'Clean refrigerator condenser coils':                 450,  // compressor failure
+  'Replace refrigerator water filter':                  150,
+  'Clean door gaskets and seals':                       200,
+  'Vacuum and clean behind and beneath refrigerator':   200,
+  'Clean dishwasher filter and trap':                   250,
+  'Run dishwasher cleaning cycle':                      150,
+  'Clean spray arms':                                   200,
+  'Inspect door gasket':                                300,
+  'Clean gas burners and ignitors':                     200,
+  'Run oven self-clean cycle':                          250,
+  'Clean range hood filters':                           350,  // grease fire risk
+  'Inspect gas supply line connection':                 600,  // safety
+  'Clean cooktop surface':                              150,
+  'Inspect power cord and connection':                  450,
+  'Clean disposal blades and interior':                 150,
+  'Deodorize garbage disposal':                          80,
+  'Check under-sink drain connections for leaks':       350,
+  'Run washing machine cleaning cycle':                 150,
+  'Clean front-load door seal and drum':                250,
+  'Inspect washer inlet hoses':                         900,  // flood prevention
+  'Clean detergent dispenser drawer':                   100,
+  'Clean dryer vent duct':                              600,  // fire prevention
+  'Inspect dryer exhaust vent cap':                     200,
+  'Clean dryer drum and moisture sensor':               200,
+};
+
+// Returns the estimated repair cost prevented for a log entry.
+// Prefers the specific task name, falls back to asset category.
+function getRepairCost(logEntry) {
+  const taskName = logEntry.maintenance_tasks?.name;
+  if (taskName && TASK_REPAIR_COST[taskName] !== undefined) {
+    return TASK_REPAIR_COST[taskName];
+  }
+  const cat = logEntry.assets?.category || 'other';
+  return REPAIR_VALUE[cat] || 150;
+}
 
 // ==============================================
 // EQUIPMENT LIBRARY
@@ -1220,27 +1379,14 @@ function renderLog() {
 }
 
 function renderSavings() {
-  const totalSpent  = allLog.reduce((sum, e) => sum + (e.cost || 0), 0);
-  const avoided     = allLog.reduce((sum, e) => {
-    const cat = e.assets?.category || 'other';
-    return sum + (REPAIR_VALUE[cat] || 80);
-  }, 0);
-  const ret = totalSpent > 0 ? (avoided / totalSpent).toFixed(1) + '×' : '—';
+  const totalSpent = allLog.reduce((sum, e) => sum + (e.cost || 0), 0);
+  const avoided    = allLog.reduce((sum, e) => sum + getRepairCost(e), 0);
+  const ret        = totalSpent > 0 ? (avoided / totalSpent).toFixed(1) + '×' : '—';
 
-  document.getElementById('savings-spent').textContent  = '$' + totalSpent.toLocaleString();
+  document.getElementById('savings-spent').textContent   = '$' + totalSpent.toLocaleString();
   document.getElementById('savings-avoided').textContent = '$' + avoided.toLocaleString();
   document.getElementById('savings-return').textContent  = ret;
 
-  // Bar chart by asset
-  const byAsset = {};
-  allLog.forEach(e => {
-    const name = e.assets?.name || 'Unknown';
-    const cat  = e.assets?.category || 'other';
-    if (!byAsset[name]) byAsset[name] = { avoided: 0, cat };
-    byAsset[name].avoided += REPAIR_VALUE[cat] || 80;
-  });
-
-  const maxAvoided = Math.max(...Object.values(byAsset).map(v => v.avoided), 1);
   const el = document.getElementById('savings-log');
 
   if (!allLog.length) {
@@ -1248,16 +1394,40 @@ function renderSavings() {
     return;
   }
 
-  el.innerHTML = Object.entries(byAsset).map(([name, v]) => `
-    <div class="savings-bar-item">
-      <div class="savings-bar-label">
-        <span>${name}</span>
-        <span>$${v.avoided.toLocaleString()} avoided</span>
-      </div>
-      <div class="savings-bar-track">
-        <div class="savings-bar-fill" style="width:${Math.round(v.avoided / maxAvoided * 100)}%"></div>
-      </div>
-    </div>`).join('');
+  // Group by asset, accumulate task-specific costs + list task names
+  const byAsset = {};
+  allLog.forEach(e => {
+    const assetName = e.assets?.name || 'Unknown';
+    const taskName  = e.maintenance_tasks?.name || 'Maintenance';
+    const cost      = getRepairCost(e);
+    if (!byAsset[assetName]) byAsset[assetName] = { avoided: 0, tasks: [] };
+    byAsset[assetName].avoided += cost;
+    byAsset[assetName].tasks.push({ name: taskName, cost });
+  });
+
+  const maxAvoided = Math.max(...Object.values(byAsset).map(v => v.avoided), 1);
+
+  el.innerHTML = Object.entries(byAsset)
+    .sort((a, b) => b[1].avoided - a[1].avoided)
+    .map(([assetName, v]) => {
+      const taskList = v.tasks.map(t =>
+        `<div class="savings-task-row">
+          <span class="savings-task-name">${t.name}</span>
+          <span class="savings-task-cost">~$${t.cost.toLocaleString()} prevented</span>
+        </div>`
+      ).join('');
+      return `
+        <div class="savings-bar-item">
+          <div class="savings-bar-label">
+            <span>${assetName}</span>
+            <span>$${v.avoided.toLocaleString()} avoided</span>
+          </div>
+          <div class="savings-bar-track">
+            <div class="savings-bar-fill" style="width:${Math.round(v.avoided / maxAvoided * 100)}%"></div>
+          </div>
+          <div class="savings-task-list">${taskList}</div>
+        </div>`;
+    }).join('');
 }
 
 // ==============================================
